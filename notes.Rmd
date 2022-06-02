@@ -1,0 +1,299 @@
+---
+title: "R Notes"
+output: html_notebook
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+In this note I explore the dataset _`indiv_dimension_2021may_overall_mobility_topics`_.
+
+```{r}
+library(readr)
+all_df <-
+  read_delim(
+    "G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/data/indiv_dimensions_2021may_overall_mobility_topics.csv",
+    delim = ";",
+    escape_double = FALSE,
+    col_names = FALSE,
+    col_types = cols(
+      X9 = col_double(),
+      X15 = col_double(),
+      X16 = col_double(),
+      X17 = col_double(),
+      X18 = col_double()
+    ),
+    locale = locale(decimal_mark = ",",
+                    grouping_mark = "."),
+    trim_ws = TRUE
+  )
+names(all_df) <-
+  c(
+    "researcher_id",
+    "p",
+    "first_year",
+    "country_code_origin",
+    "max_affil_origin",
+    "n_co_origin",
+    "n_countries",
+    "n_topics",
+    "s_diversity_h",
+    "s_evenness",
+    "p_home",
+    "n_topics_home",
+    "s_diversity_h_home",
+    "s_evenness_home",
+    "p_abroad",
+    "n_topics_abroad",
+    "s_diversity_h_abroad",
+    "s_evenness_abroad"
+  )
+head(all_df)
+```
+
+Vamos a probar la relación entre _p_, _`s_evenness`_ y _`n_topics`_:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(hrbrthemes)
+
+# A few constants
+balance <- "#69b3a2"
+variety <- rgb(0.2, 0.6, 0.9, 1)
+coeff <- 100
+
+all_df %>%
+  group_by(p) %>%
+  summarize(mean_evenness = mean(s_evenness), 
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0,150) +
+  geom_line(aes(x = p, y = mean_evenness, color = balance)) +
+  geom_line(aes(x = p, y = mean_topics/coeff, color = variety,)) +
+  scale_y_continuous( name = "Shannon Evenness",
+                      sec.axis = sec_axis(~.*coeff, name = "# topics")) +
+   theme_ipsum() +
+  theme(
+    axis.title.y = element_text(color = balance, size=13),
+    axis.title.y.right = element_text(color = variety, size=13),
+    legend.position = "none"
+  ) +
+  ggtitle("Relation balance/variety of topics")
+```
+
+Como vemos, tienden a confluir. A más producción, menos balance y más temas. Ahora vamos a comparar móviles vs. no móviles
+
+```{r}
+all_df$mobile <- ifelse(all_df$n_countries > 1, "mobile", "non-mobile")
+
+
+all_df %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  # geom_point(aes(
+  #   x = p,
+  #   y = mean_evenness,
+  #   color = mobile
+  # )) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  # geom_point(aes(
+  #   x = p,
+  #   y = mean_topics / coeff,
+  #   color = mobile
+  # )) +
+    geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = balance, size = 13),
+    axis.title.y.right = element_text(color = variety, size = 13)
+#    , legend.position = "none"
+  ) +
+  ggtitle("Relation balance/variety of topics")
+```
+Let's have a look at differences based on country of origin:
+```{r}
+all_df %>%
+  group_by(country_code_origin) %>%
+  summarize(n = n_distinct(researcher_id)) %>%
+  arrange(desc(n)) %>%
+  head(n =20)
+``` 
+
+We select the following countries: NL, US, IN, CH, BR, ZA
+```{r}
+library(ggpubr)
+NL <- all_df %>%
+  filter(country_code_origin=="AR") %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  theme(
+    axis.title.y = element_text(color = balance, size = 8),
+    axis.title.y.right = element_text(color = variety, size = 8)
+    , legend.position = "none"
+  ) +
+  ggtitle("Argentina")
+  
+US <- all_df %>%
+  filter(country_code_origin=="NG") %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = balance, size = 8),
+    axis.title.y.right = element_text(color = variety, size = 8)
+    , legend.position = "none"
+  ) +
+  ggtitle("Nigeria")
+
+CH <- all_df %>%
+  filter(country_code_origin=="CH") %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = balance, size = 8),
+    axis.title.y.right = element_text(color = variety, size = 8)
+    , legend.position = "none"
+  ) +
+  ggtitle("China")
+
+BR <- all_df %>%
+  filter(country_code_origin=="BR") %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = balance, size = 8),
+    axis.title.y.right = element_text(color = variety, size = 8)
+    , legend.position = "none"
+  ) +
+  ggtitle("Brazil")
+
+ZA <- all_df %>%
+  filter(country_code_origin=="ZA") %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = balance, size = 8),
+    axis.title.y.right = element_text(color = variety, size = 8)
+    , legend.position = "none"
+  ) +
+  ggtitle("South Africa")
+  
+IN <- all_df %>%
+  filter(country_code_origin=="JP") %>%
+  group_by(p, mobile) %>%
+  summarize(mean_evenness = mean(s_evenness),
+            mean_topics = mean(n_topics)) %>%
+  ggplot() +
+  xlim(0, 500) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_evenness,
+    color = mobile, method = "loess")) +
+  geom_smooth(aes(
+    x = p,
+    y = mean_topics / coeff,
+    color = mobile, method = "loess")) +
+  scale_y_continuous(name = "Shannon Evenness",
+                     sec.axis = sec_axis( ~ . * coeff, name = "# topics")) +
+  theme_ipsum() +
+  
+  theme(
+    axis.title.y = element_text(color = balance, size = 8),
+    axis.title.y.right = element_text(color = variety, size = 8)
+  , legend.position = "none"
+  ) +
+  ggtitle("Japan")
+  
+ggarrange(NL, US, CH, IN, BR, ZA, ncol =3, nrow=2)
+
+```
+
+Ahora estaría bien hacer para cada país un boxplot con la diferencia promedio por investigador.
+
+## Publicaciones en casa vs. fuera
