@@ -93,16 +93,16 @@ all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   # geom_point(aes(
   #   x = p,
   #   y = mean_evenness,
   #   color = mobile
   # )) +
-  geom_smooth(aes(
-    x = p,
-    y = mean_evenness,
-    color = mobile, method = "loess")) +
+  # geom_smooth(aes(
+  #   x = p,
+  #   y = mean_evenness,
+  #   color = mobile, method = "loess")) +
   # geom_point(aes(
   #   x = p,
   #   y = mean_topics / coeff,
@@ -141,7 +141,7 @@ NL <- all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   geom_smooth(aes(
     x = p,
     y = mean_evenness,
@@ -166,7 +166,7 @@ US <- all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   geom_smooth(aes(
     x = p,
     y = mean_evenness,
@@ -192,7 +192,7 @@ CH <- all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   geom_smooth(aes(
     x = p,
     y = mean_evenness,
@@ -218,7 +218,7 @@ BR <- all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   geom_smooth(aes(
     x = p,
     y = mean_evenness,
@@ -244,7 +244,7 @@ ZA <- all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   geom_smooth(aes(
     x = p,
     y = mean_evenness,
@@ -270,7 +270,7 @@ IN <- all_df %>%
   summarize(mean_evenness = mean(s_evenness),
             mean_topics = mean(n_topics)) %>%
   ggplot() +
-  xlim(0, 500) +
+  xlim(0, 150) +
   geom_smooth(aes(
     x = p,
     y = mean_evenness,
