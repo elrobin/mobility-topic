@@ -3,14 +3,14 @@ library(readr)
 library(dplyr)
 
 # Import data
-pubs <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/pubs.txt", 
+pubs <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/pubs.txt", 
                    delim = "\t", escape_double = FALSE, 
                    trim_ws = TRUE)
-researchers <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/researchers.txt", 
+researchers <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/researchers.txt", 
                    delim = "\t", escape_double = FALSE, 
                    trim_ws = TRUE)
 
-clusters <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/clusters.txt", 
+clusters <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/clusters.txt", 
                    delim = "\t", escape_double = FALSE, 
                    trim_ws = TRUE)
 # Convert researchers in unique table
@@ -35,6 +35,11 @@ df1 <- data.frame(
   "cl_int" = double(),
   "cl_cits" = double()
 )
+pb = txtProgressBar(
+  min = 0,
+  max = length(researchers$researcher_id),
+  initial = 0
+)  # Progress bar
 
 for(i in researchers$researcher_id) {
   # Search for publications
@@ -45,18 +50,21 @@ for(i in researchers$researcher_id) {
   rm(pubs.list)
   # Compute variables
   active_years <- length(unique(c.pubs.list$pub_year))
-  age <- max(c.pubs.list$pub_year) - min(c.pubs.list$pub_year)
+  age <- 1 + (max(c.pubs.list$pub_year) - min(c.pubs.list$pub_year))
   total_topics <- length(unique(c.pubs.list$cluster_id1))
-  total_p <- length(c.pubs.list$pub_id)
+  total_p <- length(unique(c.pubs.list$pub_id))
   p_abroad <- sum(c.pubs.list$foreign_country)
   p_home <- nrow(subset(c.pubs.list, foreign_country == 0))
-  pubs.no.co <- unique(c.pubs.list[, c("pub_id", "int_collab", "n_cits")])
+  pubs.no.co <-
+    unique(
+      c.pubs.list[, c(
+        "pub_id", "int_collab", "n_cits", "p", "p_int_collab", "t_cits")])
   p_int <- sum(pubs.no.co$int_collab)
   t_cits <- sum(pubs.no.co$n_cits)
+    cl_p <- median(pubs.no.co$p)
+  cl_int <- median(pubs.no.co$p_int_collab)
+  cl_cits <- median(pubs.no.co$t_cits)
   rm(pubs.no.co)
-  cl_p <- median(c.pubs.list$p)
-  cl_int <- median(c.pubs.list$p_int_collab)
-  cl_cits <- median(c.pubs.list$t_cits)
   # Create vector
   v <-
     c(i,
@@ -73,6 +81,7 @@ for(i in researchers$researcher_id) {
       cl_cits)
   # Add to framework
   df1[nrow(df1) + 1,] <- v
+  setTxtProgressBar(pb,i)
 }
 # Export
 write.csv(df1, file = "G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/df1.txt")
@@ -103,8 +112,8 @@ df2 <- data.frame(
 period <- c("T1", "T2", "T3", "T4", "T5")
 
 # Create periods
-for(i in fakelist$researcher_id){
-  pub.list <- subset(pubs, researcher_id == i)
+for(i in researchers$researcher_id){
+  pub.list <- subset(pubs, researcher_id == i) 
   pub.list <- 
     merge(pub.list, fakelist, by = "researcher_id", all.x = T)
   pub.list$period <- ifelse(
@@ -127,42 +136,7 @@ for(i in fakelist$researcher_id){
       )
     )
   )
-  # Add cluster info
-  c.pubs.list <- merge(pub.list, clusters, by ="cluster_id1", all.x = T)
-  rm(pub.list)
-
-  # Calculations per time period
-  for(j in period) {
-    period.data <- subset(c.pubs.list, period == j) 
-    # Compute variables
-    topics <- length(unique(period.data$cluster_id1))
-    p <- length(period.data$pub_id)
-    tp_abroad <- sum(period.data$foreign_country)
-    tp_home <- nrow(subset(period.data, foreign_country == 0))
-    pubs.no.co <- unique(period.data[, c("pub_id", "int_collab", "n_cits")])
-    tp_int <- sum(pubs.no.co$int_collab)
-    tt_cits <- sum(pubs.no.co$t_cits.x)
-    rm(pubs.no.co)
-    tcl_p <- median(period.data$p)
-    tcl_int <- median(period.data$p_int_collab)
-    tcl_cits <- median(period.data$t_cits.y)
-    # Create vector
-    v <-
-      c(i,
-        j,
-        topics,
-        p,
-        tp_abroad,
-        tp_home,
-        tp_int,
-        tt_cits,
-        tcl_p,
-        tcl_int,
-        tcl_cits)
-    # Add to framework
-    df2[nrow(df2) + 1,] <- v
-    
-  }
+  
   # Compute churning vars
   t1df <- subset(c.pubs.list, period == "T1")
   T1 <- unique(t1df$cluster_id1)
@@ -177,7 +151,7 @@ for(i in fakelist$researcher_id){
   #remove unnecessary df
   rm(list = c("t1df", "t2df", "t3df", "t4df", "t5df"))
   # Create vector which will be 
-#   v1 m_cl Maintained topics
+  #   v1 m_cl Maintained topics
   m_cl1 <- -1
   if (length(T2) == 0) {
     m_cl2 <- -1
@@ -201,7 +175,7 @@ for(i in fakelist$researcher_id){
   }
   m_cl <- c(m_cl1, m_cl2, m_cl3, m_cl4, m_cl5)
   rm(m_cl1, m_cl2, m_cl3, m_cl4, m_cl5)
-#   v2 n_cl New topics
+  #   v2 n_cl New topics
   n_cl1 <- -1
   if (length(T2) == 0) {
     n_cl2 <- -1
@@ -276,9 +250,59 @@ for(i in fakelist$researcher_id){
   }
   s_cl <- c(s_cl1, s_cl2, s_cl3, s_cl4, s_cl5)
   rm(s_cl1, s_cl2, s_cl3, s_cl4, s_cl5)
-  # Add columns to dataframe
-  df2$m_cl <- m_cl
-  df2$n_cl <- n_cl ## OJO ## Aquí hay que restar al final los s_cl para que sean nuevos de verdad
-  df2$d_cl <- d_cl
-  df2$s_cl <- s_cl
+
+
+  # Calculations per time period
+  for(j in seq_along(period)) {
+    period.data <- subset(pub.list, period == period[j]) 
+    # Compute variables
+    topics <- length(unique(period.data$cluster_id1))
+    p <- length(unique(period.data$pub_id))
+    tp_abroad <- sum(period.data$foreign_country)
+    tp_home <- nrow(subset(period.data, foreign_country == 0))
+    pubs.no.co <- 
+      unique(
+        period.data[, c(
+          "pub_id", "int_collab", "n_cits", "cl_p", "cl_int", "cl_cits")])
+    tp_int <- sum(pubs.no.co$int_collab)
+    tt_cits <- sum(pubs.no.co$t_cits.x)
+     tcl_p <-
+      ifelse(length(unique(pubs.no.co$cl_p)) == 1,
+             pubs.no.co$cl_p,
+             median(pubs.no.co$cl_p))
+    tcl_int <-
+      ifelse(length(unique(pubs.no.co$cl_int)) == 1,
+             pubs.no.co$cl_int,
+             median(pubs.no.co$cl_int))
+    tcl_cits <- 
+      ifelse(length(unique(pubs.no.co$cl_cits)) == 1,
+             pubs.no.co$cl_cits,
+             median(pubs.no.co$cl_cits))
+    rm(pubs.no.co)
+    period_val <- period[j]
+    m_cl <- m_cl[j]
+    n_cl <- n_cl[j]
+    d_cl <- d_cl[j]
+    s_cl <- s_cl[j]
+    # Create vector
+    v <-
+      c(i,
+        period_val,
+        topics,
+        p,
+        tp_abroad,
+        tp_home,
+        tp_int,
+        tt_cits,
+        tcl_p,
+        tcl_int,
+        tcl_cits,
+        m_cl,
+        n_cl,
+        d_cl,
+        s_cl)
+    # Add to framework
+    df2[nrow(df2) + 1,] <- v
+    
+  }
  }
