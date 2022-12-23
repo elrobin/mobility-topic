@@ -107,15 +107,19 @@ df2 <- data.frame(
   "tt_cits" = double(),
   "tcl_p" = double(),
   "tcl_int" = double(),
-  "tcl_cits" = double()
+  "tcl_cits" = double(),
+  "m_cl" = double(),
+  "n_cl" = double(),
+  "d_cl" = double(),
+  "s_cl" = double()
 )
 period <- c("T1", "T2", "T3", "T4", "T5")
 
 # Create periods
-for(i in researchers$researcher_id){
+for(i in f.res.list$researcher_id){
   pub.list <- subset(pubs, researcher_id == i) 
   pub.list <- 
-    merge(pub.list, fakelist, by = "researcher_id", all.x = T)
+    merge(pub.list, f.res.list, by = "researcher_id", all.x = T)
   pub.list$period <- ifelse(
     pub.list$pub_year - pub.list$first_year < 3,
     "T1",
