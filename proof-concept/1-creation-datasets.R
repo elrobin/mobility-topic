@@ -35,11 +35,7 @@ df1 <- data.frame(
   "cl_int" = double(),
   "cl_cits" = double()
 )
-pb = txtProgressBar(
-  min = 0,
-  max = length(researchers$researcher_id),
-  initial = 0
-)  # Progress bar
+
 
 for(i in researchers$researcher_id) {
   # Search for publications
@@ -81,7 +77,6 @@ for(i in researchers$researcher_id) {
       cl_cits)
   # Add to framework
   df1[nrow(df1) + 1,] <- v
-  setTxtProgressBar(pb,i)
 }
 # Export
 write.csv(df1, file = "G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/df1.txt")
@@ -93,7 +88,7 @@ f.res.list <- subset(df1, total_p>2)
 
 f.res.list <-
   merge(f.res.list, researchers, by = "researcher_id", all.x = T)
-fakelist <- f.res.list[1:3,]
+
 
 # Create empty dataframe
 df2 <- data.frame(
@@ -117,7 +112,7 @@ period <- c("T1", "T2", "T3", "T4", "T5")
 
 # Create periods
 for(i in f.res.list$researcher_id){
-  pub.list <- subset(pubs, researcher_id == i) 
+  pub.list <- subset(pubs, researcher_id == "ur.01000211634.83") 
   pub.list <- 
     merge(pub.list, f.res.list, by = "researcher_id", all.x = T)
   pub.list$period <- ifelse(
@@ -258,7 +253,7 @@ for(i in f.res.list$researcher_id){
 
   # Calculations per time period
   for(j in seq_along(period)) {
-    period.data <- subset(pub.list, period == period[j]) 
+    period.data <- subset(pub.list, period == period[1]) 
     # Compute variables
     topics <- length(unique(period.data$cluster_id1))
     p <- length(unique(period.data$pub_id))
@@ -269,7 +264,7 @@ for(i in f.res.list$researcher_id){
         period.data[, c(
           "pub_id", "int_collab", "n_cits", "cl_p", "cl_int", "cl_cits")])
     tp_int <- sum(pubs.no.co$int_collab)
-    tt_cits <- sum(pubs.no.co$t_cits.x)
+    tt_cits <- sum(pubs.no.co$n_cits)
      tcl_p <-
       ifelse(length(unique(pubs.no.co$cl_p)) == 1,
              pubs.no.co$cl_p,
