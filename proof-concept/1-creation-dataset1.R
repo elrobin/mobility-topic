@@ -1,4 +1,4 @@
-# Load librariess
+# Load libraries
 library(readr)
 library(dplyr)
 
