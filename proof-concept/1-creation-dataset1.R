@@ -60,9 +60,12 @@ for(i in researchers$researcher_id) {
         "pub_id", "int_collab", "n_cits", "p", "p_int_collab", "t_cits")])
   p_int <- sum(pubs.no.co$int_collab)
   t_cits <- sum(pubs.no.co$n_cits)
-    cl_p <- median(pubs.no.co$p) # Añadir rango max-min
-  cl_int <- median(pubs.no.co$p_int_collab) # Añadir rango max-min
-  cl_cits <- median(pubs.no.co$t_cits) # Añadir rango max-min
+    cl_p <- median(pubs.no.co$p)
+  cl_p_range <- range(cl_p, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
+  cl_int <- median(pubs.no.co$p_int_collab)
+  cl_int_range <- range(cl_int, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
+  cl_cits <- median(pubs.no.co$t_cits)
+  cl_cits_range <- range(cl_cits, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
   # Añadir país de origen
   # Añadir tipo de movilidad
   rm(pubs.no.co)
