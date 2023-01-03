@@ -66,8 +66,14 @@ for(i in researchers$researcher_id) {
   cl_int_range <- range(cl_int, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
   cl_cits <- median(pubs.no.co$t_cits)
   cl_cits_range <- range(cl_cits, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
-  # Añadir país de origen
-  # Añadir tipo de movilidad
+  # Añadir país de origen (¿dentro del loop?)
+  mob_affil <- ifelse(df$total_abroad == 0, "non-mobile",
+                      ifelse(df$total_abroad > 0 & (df$total_abroad + df$total_home) == df$total_p, "mobile",
+                             ifelse(df$total_abroad > 0 & df$total_home == df$total_p, "mult_affil",
+                                    ifelse(df$total_abroad > 0 & (df$total_abroad + df$total_home) > df$total_p & df$total_home < df$total_p, "mult_affil_mob", NA)
+                             )
+                      )
+  ) # Añadir tipo de movilidad (¿dentro del loop?)
   rm(pubs.no.co)
   # Create vector
   v <-
