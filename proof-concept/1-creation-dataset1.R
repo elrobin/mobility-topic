@@ -1,6 +1,9 @@
 # Load libraries
 library(readr)
 library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(ggridges)
 
 # Import data
 pubs <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/pubs.txt", 
