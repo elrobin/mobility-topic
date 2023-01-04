@@ -4,18 +4,27 @@ library(dplyr)
 library(ggplot2)
 library(tidyverse)
 library(ggridges)
+library(googledrive)
 
-# Import data
-pubs <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/pubs.txt", 
-                   delim = "\t", escape_double = FALSE, 
-                   trim_ws = TRUE)
-researchers <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/researchers.txt", 
-                   delim = "\t", escape_double = FALSE, 
-                   trim_ws = TRUE)
+# Import data via Google Drive
+drive_auth(email = NA)
+drive_auth()
 
-clusters <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/data/clusters.txt", 
-                   delim = "\t", escape_double = FALSE, 
-                   trim_ws = TRUE)
+pubs_id <- drive_get(id = '1qikO0VnzL-Avu25eWsKehXDsTsXNbO8z')
+pubs <- pubs_id %>%
+  drive_read_string(encoding = 'UTF-8') %>%
+  read.delim(text = ., header = TRUE, sep = "\t", strip.white = TRUE)
+
+researchers_id <- drive_get(id = '1DD3wGyRjHSZ0aeybVMP2s76VBgKEJwGO')
+researchers <- researchers_id %>%
+  drive_read_string(encoding = 'UTF-8') %>%
+  read.delim(text = ., header = TRUE, sep = "\t", strip.white = TRUE)
+
+clusters_id <- drive_get(id = '1vgP94g41V85bGrqZsXSqn4jCz63tHcL_')
+clusters <- clusters_id %>%
+  drive_read_string(encoding = 'UTF-8') %>%
+  read.delim(text = ., header = TRUE, sep = "\t", strip.white = TRUE)
+
 # Convert researchers in unique table
 researchers <- researchers %>%
   select(researcher_id, first_year, country_code_origin) %>% # remove institution
