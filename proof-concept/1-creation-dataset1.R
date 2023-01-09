@@ -104,3 +104,32 @@ for(i in researchers$researcher_id) {
 # Export
 write.csv(df1, file = "G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/proof_of_concept/df1.txt")
 
+
+###
+## Temporary work for plotting purposes
+# Import df1 via Google Drive
+df1_id <- drive_get(id = '1xJCJi1YDIae1CeOated3UMlKB87bxKFs')
+df1 <- df1_id %>%
+  drive_read_string(encoding = 'UTF-8') %>%
+  read.delim(text = ., header = TRUE, sep = ",", strip.white = TRUE)
+
+# Create mobility/affiliation variable
+df1$mob_affil <- ifelse(df1$total_abroad == 0, "non-mobile",
+                       ifelse(df1$total_abroad > 0 & (df1$total_abroad + df1$total_home) == df1$total_p, "mobile",
+                              ifelse(df1$total_abroad > 0 & df1$total_home == df1$total_p, "mult_affil",
+                                     ifelse(df1$total_abroad > 0 & (df1$total_abroad + df1$total_home) > df1$total_p & df1$total_home < df1$total_p, "mult_affil_mob", NA)
+                              )
+                       )
+)
+
+# Remove NA values in mob_affil variable, cases with < 3 publications and cases with >= 14 active_years from df1
+df1_clean <- filter(df1, ! is.na(mob_affil) & total_p >= 3 & active_years < 14)
+
+# Convert active_years variable to factor
+df1_clean$active_years <- as.factor(df1_clean$active_years)
+
+# Create proportion of publications abroad variable
+df1_clean$proportion_p_abroad <- df1_clean$total_abroad/df1_clean$total_p
+
+# Create proportion of international topics variable
+df1_clean$proportion_cl_int <- df1_clean$cl_int/df1_clean$cl_p
