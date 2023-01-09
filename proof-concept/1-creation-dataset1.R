@@ -137,3 +137,29 @@ df1_clean$proportion_cl_int <- df1_clean$cl_int/df1_clean$cl_p
 
 # Merge df1_clean and researchers dataframes by IDs
 df1_final <- inner_join(df1_clean, researchers, by = "researcher_id")
+
+## Data grouping for plotting purposes
+# Group researchers by mobility/affiliation and country of origin
+df1_final_grouped_country <- df1_final %>% group_by(mob_affil, country_code_origin) %>% 
+  summarise(researchers_count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Group researchers by mobility/affiliation and active years
+df1_final_grouped_years <- df1_final %>% group_by(mob_affil, active_years) %>% 
+  summarise(researchers_count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Group researchers by mobility/affiliation, active years and country
+df1_final_grouped_years_country <- df1_final %>% group_by(mob_affil, active_years, country_code_origin) %>% 
+  summarise(researchers_count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Group researchers by mobility/affiliation and publications
+df1_final_grouped_pubs <- df1_final %>% group_by(mob_affil, total_p) %>% 
+  summarise(researchers_count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Group researchers by mobility/affiliation, publications and country
+df1_final_grouped_pubs_country <- df1_final %>% group_by(mob_affil, total_p, country_code_origin) %>% 
+  summarise(researchers_count = n(),.groups = 'drop') %>%
+  as.data.frame()
