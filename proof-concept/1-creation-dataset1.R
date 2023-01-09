@@ -133,3 +133,7 @@ df1_clean$proportion_p_abroad <- df1_clean$total_abroad/df1_clean$total_p
 
 # Create proportion of international topics variable
 df1_clean$proportion_cl_int <- df1_clean$cl_int/df1_clean$cl_p
+## End of temporary work
+
+# Merge df1_clean and researchers dataframes by IDs
+df1_final <- inner_join(df1_clean, researchers, by = "researcher_id")
