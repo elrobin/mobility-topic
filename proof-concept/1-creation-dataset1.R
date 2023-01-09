@@ -165,24 +165,24 @@ df1_final_grouped_pubs_country <- df1_final %>% group_by(mob_affil, total_p, cou
   as.data.frame()
 
 ## Data filtering for plotting purposes
-df_final_grouped_country_nonmob_filter <- filter(df_final_grouped_country, mob_affil != "non-mobile")
+df1_final_grouped_country_nonmob_filter <- filter(df1_final_grouped_country, mob_affil != "non-mobile")
 
-df_final_p100_filter <- filter(df_final, total_p <= 100)
+df1_final_p100_filter <- filter(df1_final, total_p <= 100)
 
-df_final_t30_filter <- filter(df_final, total_topics <= 30)
+df1_final_t30_filter <- filter(df1_final, total_topics <= 30)
 
-df_final_p150_filter <- filter(df_final, total_p <= 150)
+df1_final_p150_filter <- filter(df1_final, total_p <= 150)
 
-df_final_t40_filter <- filter(df_final, total_topics <= 40)
+df1_final_t40_filter <- filter(df1_final, total_topics <= 40)
 
-df_final_grouped_years_nonmob_filter <- filter(df_final_grouped_years, mob_affil != "non-mobile")
+df1_final_grouped_years_nonmob_filter <- filter(df1_final_grouped_years, mob_affil != "non-mobile")
 
-df_final_grouped_years_country_nonmob_filter <- filter(df_final_grouped_years_country, mob_affil != "non-mobile")
+df1_final_grouped_years_country_nonmob_filter <- filter(df1_final_grouped_years_country, mob_affil != "non-mobile")
 
-df_final_grouped_p50_filter <- filter(df_final_grouped_pubs, total_p <= 50)
+df1_final_grouped_p50_filter <- filter(df1_final_grouped_pubs, total_p <= 50)
 
-df_final_grouped_p50_nonmob_filter <- filter(df_final_grouped_pubs, total_p <= 50 & mob_affil != "non-mobile")
+df1_final_grouped_p50_nonmob_filter <- filter(df1_final_grouped_pubs, total_p <= 50 & mob_affil != "non-mobile")
 
-df_final_grouped_p50_country_filter <- filter(df_final_grouped_pubs_country, total_p <= 50)
+df1_final_grouped_p50_country_filter <- filter(df1_final_grouped_pubs_country, total_p <= 50)
 
-df_final_grouped_p50_country_nonmob_filter <- filter(df_final_grouped_pubs_country, total_p <= 50 & mob_affil != "non-mobile")
+df1_final_grouped_p50_country_nonmob_filter <- filter(df1_final_grouped_pubs_country, total_p <= 50 & mob_affil != "non-mobile")
