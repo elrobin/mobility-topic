@@ -118,8 +118,17 @@ df1$mob_affil <- ifelse(df1$total_abroad == 0, "non-mobile",
                                      ifelse(df1$total_abroad > 0 & (df1$total_abroad + df1$total_home) > df1$total_p & df1$total_home < df1$total_p, "mult_affil_mob", NA)
                               )
                        )
-)
+                )
 
+# Create mobility/affiliation vs non-mobility variable
+df1$mob_affil_vs_non <- ifelse(df1$mob_affil == "non-mobile", "non-mobile",
+                               ifelse(df1$mob_affil == "mobile", "mobile",
+                                      ifelse(df1$mob_affil == "mult_affil", "mobile",
+                                             ifelse(df1$mob_affil == "mult_affil_mob", "mobile", NA)
+                                             )
+                                      )
+                               )
+                        
 # Remove NA values in mob_affil variable, cases with < 3 publications and cases with >= 14 active_years from df1
 df1_clean <- filter(df1, ! is.na(mob_affil) & total_p >= 3 & active_years < 14)
 
@@ -394,12 +403,13 @@ ggplot(df1_final_grouped_p50_country_nonmob_filter, aes(x = total_p, y = researc
 #ggsave("7D.png")
 #drive_update(file = as_id("1HEPHg4gIpLvzclrKsr5nF22-kvGUS1Bq"), media = "7D.png")
 
-# 8A) joyplot: ACTIVE_YEARS by TOTAL_TOPICS (<=40)
+# 8A) joyplot: ACTIVE_YEARS by TOTAL_TOPICS (<=40) and MOB/AFFIL
 ggplot(df1_final_t40_filter, aes(x = total_topics, y = active_years, fill = active_years, color = active_years)) +
   geom_density_ridges(alpha=0.6, bandwidth=4) +
+  facet_wrap(~mob_affil) +
   theme_minimal() +
   theme(legend.position="none") +
-  ggtitle("Researchers' active years by number of topics (<=40)") +
+  ggtitle("Researchers' active years by number of topics (<=40) and mobility/affiliation") +
   xlab("Number of topics") +
   ylab("Active years")
 #ggsave("8A.png")
