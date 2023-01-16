@@ -427,6 +427,18 @@ ggplot(df1_final_t40_filter, aes(x = total_topics, y = active_years, fill = acti
 #ggsave("8B.png")
 #drive_update(file = as_id("1LthxsYPF3_SpDGXcfQzLu49x30ArqS7q"), media = "8B.png")
 
+# 8C) joyplot: ACTIVE_YEARS by TOTAL_TOPICS (<=40) and MOB/AFFIL vs NON-MOBILITY
+ggplot(df1_final_t40_filter, aes(x = total_topics, y = active_years, fill = active_years, color = active_years)) +
+  geom_density_ridges(alpha=0.6, bandwidth=4) +
+  facet_wrap(~mob_affil_vs_non) +
+  theme_minimal() +
+  theme(legend.position="none") +
+  ggtitle("Researchers' active years by number of topics (<=40) and mob/affil vs non-mobility") +
+  xlab("Number of topics") +
+  ylab("Active years")
+#ggsave("8C.png")
+#drive_update(file = as_id("1yAW7CDwpbsHVuu8n_s9zDX5_WVxGbE0w"), media = "8C.png")
+
 
 # Export data to Google Drive
 write.csv(df1, file = "df1.txt")
