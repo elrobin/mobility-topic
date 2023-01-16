@@ -44,10 +44,12 @@ df1 <- data.frame(
   "p_int" = double(),
   "t_cits" = double(),
   "cl_p" = double(),
+  "cl_p_range" = double(),
   "cl_int" = double(),
-  "cl_cits" = double()
+  "cl_int_range" = double(),
+  "cl_cits" = double(),
+  "cl_cits_range" = double()
 )
-
 
 for(i in researchers$researcher_id) {
   # Search for publications
@@ -69,20 +71,12 @@ for(i in researchers$researcher_id) {
         "pub_id", "int_collab", "n_cits", "p", "p_int_collab", "t_cits")])
   p_int <- sum(pubs.no.co$int_collab)
   t_cits <- sum(pubs.no.co$n_cits)
-    cl_p <- median(pubs.no.co$p)
-  cl_p_range <- range(cl_p, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
+  cl_p <- median(pubs.no.co$p)
+  cl_p_range <- range(cl_p, na.rm = TRUE)
   cl_int <- median(pubs.no.co$p_int_collab)
-  cl_int_range <- range(cl_int, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
+  cl_int_range <- range(cl_int, na.rm = TRUE)
   cl_cits <- median(pubs.no.co$t_cits)
-  cl_cits_range <- range(cl_cits, na.rm = TRUE) # Añadir rango max-min (¿dentro del loop?)
-  # Añadir país de origen (¿dentro del loop? En mi código obtuve esta variable al mergear los dataframes df y researchers a través de sus IDs)
-  mob_affil <- ifelse(df$total_abroad == 0, "non-mobile",
-                      ifelse(df$total_abroad > 0 & (df$total_abroad + df$total_home) == df$total_p, "mobile",
-                             ifelse(df$total_abroad > 0 & df$total_home == df$total_p, "mult_affil",
-                                    ifelse(df$total_abroad > 0 & (df$total_abroad + df$total_home) > df$total_p & df$total_home < df$total_p, "mult_affil_mob", NA)
-                             )
-                      )
-  ) # Añadir tipo de movilidad (¿dentro del loop?)
+  cl_cits_range <- range(cl_cits, na.rm = TRUE)
   rm(pubs.no.co)
   # Create vector
   v <-
@@ -96,20 +90,14 @@ for(i in researchers$researcher_id) {
       p_int,
       t_cits,
       cl_p,
+      cl_p_range,
       cl_int,
-      cl_cits)
+      cl_int_range,
+      cl_cits,
+      cl_cits_range)
   # Add to framework
   df1[nrow(df1) + 1,] <- v
 }
-
-
-###
-## Temporary work for plotting purposes
-# Import df1 via Google Drive
-df1_id <- drive_get(id = '1xJCJi1YDIae1CeOated3UMlKB87bxKFs')
-df1 <- df1_id %>%
-  drive_read_string(encoding = 'UTF-8') %>%
-  read.delim(text = ., header = TRUE, sep = ",", strip.white = TRUE)
 
 # Create mobility/affiliation variable
 df1$mob_affil <- ifelse(df1$total_abroad == 0, "non-mobile",
@@ -140,7 +128,6 @@ df1_clean$proportion_p_abroad <- df1_clean$total_abroad/df1_clean$total_p
 
 # Create proportion of international topics variable
 df1_clean$proportion_cl_int <- df1_clean$cl_int/df1_clean$cl_p
-## End of temporary work
 
 # Merge df1_clean and researchers dataframes by IDs
 df1_final <- inner_join(df1_clean, researchers, by = "researcher_id")
