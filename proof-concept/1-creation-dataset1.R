@@ -428,5 +428,5 @@ ggplot(df1_final_t40_filter, aes(x = total_topics, y = active_years, fill = acti
 
 
 # Export data to Google Drive
-write.csv(df1, file = "df1.txt")
+write.csv(df1_final, file = "df1.txt")
 drive_update(file = as_id("1w94k-mZ7R66KNRMQvQcrS7TimmI-aDHI"), media = "df1.txt")
