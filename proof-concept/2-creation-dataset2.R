@@ -64,7 +64,7 @@ period <- c("T1", "T2", "T3", "T4", "T5")
 
 # Create periods
 for(i in f.res.list$researcher_id){
-  pub.list <- subset(pubs, researcher_id == i) # Example for tryouts ur.01000211634.83
+  pub.list <- subset(pubs, researcher_id == i) # Example for tryouts ur.01000000175.26
   pub.list <- 
     merge(pub.list, f.res.list, by = "researcher_id", all.x = T)
   pub.list$period <- ifelse(
@@ -181,8 +181,8 @@ for(i in f.res.list$researcher_id){
   rm(lost_topics1, lost_topics2, lost_topics3, lost_topics4, lost_topics5)
 
   # Calculations per time period
-  for(j in seq_along(period)) {
-    period.data <- subset(pub.list, period == period[j]) 
+  for(j in period) {
+    period.data <- subset(pub.list, period == j) 
     # Compute variables
     topics <- length(unique(period.data$cluster_id1))
     p <- length(unique(period.data$pub_id))
