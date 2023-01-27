@@ -181,8 +181,8 @@ for(i in f.res.list$researcher_id){
   rm(lost_topics1, lost_topics2, lost_topics3, lost_topics4, lost_topics5)
 
   # Calculations per time period
-  for(j in period) {
-    period.data <- subset(pub.list, period == j) 
+  for(j in 1:length(period)) {
+    period.data <- subset(pub.list, period == period[j]) 
     # Compute variables
     topics <- length(unique(period.data$cluster_id1))
     p <- length(unique(period.data$pub_id))
