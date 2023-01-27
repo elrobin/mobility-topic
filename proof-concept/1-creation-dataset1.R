@@ -99,24 +99,47 @@ for(i in researchers$researcher_id) {
   df1[nrow(df1) + 1,] <- v
 }
 
+df1.str <- df1 # Fix format
+df1.str[,-1] <- mutate_all(df1.str[,-1], function(x) as.numeric(x))
+df1 <- df1.str
+
 # Create mobility/affiliation variable
-df1$mob_affil <- ifelse(df1$total_abroad == 0, "non-mobile",
-                       ifelse(df1$total_abroad > 0 & (df1$total_abroad + df1$total_home) == df1$total_p, "mobile",
-                              ifelse(df1$total_abroad > 0 & df1$total_home == df1$total_p, "mult_affil",
-                                     ifelse(df1$total_abroad > 0 & (df1$total_abroad + df1$total_home) > df1$total_p & df1$total_home < df1$total_p, "mult_affil_mob", NA)
-                              )
-                       )
-                )
+df1$mob_affil <- ifelse(
+  df1$total_abroad == 0,
+  "non-mobile",
+  ifelse(
+    df1$total_abroad > 0 &
+      (df1$total_abroad + df1$total_home) == df1$total_p,
+    "mobile",
+    ifelse(
+      df1$total_abroad > 0 & df1$total_home == df1$total_p,
+      "mult_affil",
+      ifelse(
+        df1$total_abroad > 0 &
+          (df1$total_abroad + df1$total_home) > df1$total_p &
+          df1$total_home < df1$total_p,
+        "mult_affil_mob",
+        NA
+      )
+    )
+  )
+)
 
 # Create mobility/affiliation vs non-mobility variable
-df1$mob_affil_vs_non <- ifelse(df1$mob_affil == "non-mobile", "non-mobile",
-                               ifelse(df1$mob_affil == "mobile", "mobile",
-                                      ifelse(df1$mob_affil == "mult_affil", "mobile",
-                                             ifelse(df1$mob_affil == "mult_affil_mob", "mobile", NA)
-                                             )
-                                      )
-                               )
-                        
+df1$mob_affil_vs_non <-
+  ifelse(
+    df1$mob_affil == "non-mobile",
+    "non-mobile",
+    ifelse(
+      df1$mob_affil == "mobile",
+      "mobile",
+      ifelse(
+        df1$mob_affil == "mult_affil",
+        "mobile",
+        ifelse(df1$mob_affil == "mult_affil_mob", "mobile", NA)
+      )
+    )
+  )
 # Remove NA values in mob_affil variable, cases with < 3 publications and cases with >= 14 active_years from df1
 df1_clean <- filter(df1, ! is.na(mob_affil) & total_p >= 3 & active_years < 14)
 
