@@ -104,7 +104,7 @@ df1.str[,-1] <- mutate_all(df1.str[,-1], function(x) as.numeric(x))
 df1 <- df1.str
 
 # Create mobility/affiliation variable
-df1$mob_affil <- ifelse(
+df1$mob_type <- ifelse(
   df1$total_abroad == 0,
   "non-mobile",
   ifelse(
@@ -126,7 +126,7 @@ df1$mob_affil <- ifelse(
 )
 
 # Create mobility/affiliation vs non-mobility variable
-df1$mob_type <- 
+df1$mob_dummy <- 
   ifelse(
     df1$mob_affil == "non-mobile",
     "non-mobile",
