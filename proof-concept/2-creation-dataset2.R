@@ -236,7 +236,7 @@ for(i in f.res.list$researcher_id){
 }
 
 # Export data to Google Drive
-write.csv(df2, file = "C:/Users/elrobinster/Downloads/df2.txt")
+#write.csv(df2, file = "df2.txt") # Add local path
 drive_upload(media = "C:/Users/elrobinster/Downloads/df2.txt", 
              path = as_id("1xIBEu0WX-Xq4aqbkM4C46RRDQoPO981r"),
              name = "df2.txt")
