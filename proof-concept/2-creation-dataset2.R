@@ -210,9 +210,9 @@ for(i in f.res.list$researcher_id){
              median(pubs.no.co$cl_cits))
     rm(pubs.no.co)
     period_val <- j
-    same_topics <- ties[j,3]
-    new_topics <- ties[j,2]
-    lost_topics <- ties[j,4]
+    same_topics <- ties[which(ties$period == j, arr.ind = T),3]
+    new_topics <- ties[which(ties$period == j, arr.ind = T),2]
+    lost_topics <- ties[which(ties$period == j, arr.ind = T),4]
     # Create vector
     v <-
       c(i,
@@ -233,4 +233,10 @@ for(i in f.res.list$researcher_id){
     df2[nrow(df2) + 1,] <- v
     
   }
- }
+}
+
+# Export data to Google Drive
+write.csv(df2, file = "C:/Users/elrobinster/Downloads/df2.txt")
+drive_upload(media = "C:/Users/elrobinster/Downloads/df2.txt", 
+             path = as_id("1xIBEu0WX-Xq4aqbkM4C46RRDQoPO981r"),
+             name = "df2.txt")
