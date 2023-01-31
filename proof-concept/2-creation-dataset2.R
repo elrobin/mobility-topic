@@ -232,6 +232,9 @@ for(i in f.res.list$researcher_id){
   }
 }
 
+df2.str <- df2 # Fix format
+df2.str[,-1] <- mutate_all(df2.str[,-1], function(x) as.numeric(x))
+df2 <- df2.str
 # Export data to Google Drive
 write.csv(df2, file = "C:/Users/elrobinster/Downloads/df2.txt") # Add local path
 drive_upload(media = "C:/Users/elrobinster/Downloads/df2.txt", 
