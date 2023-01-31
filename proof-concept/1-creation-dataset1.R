@@ -126,7 +126,7 @@ df1$mob_affil <- ifelse(
 )
 
 # Create mobility/affiliation vs non-mobility variable
-df1$mob_affil_vs_non <-
+df1$mob_type <- 
   ifelse(
     df1$mob_affil == "non-mobile",
     "non-mobile",
