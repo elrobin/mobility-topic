@@ -31,17 +31,13 @@ pubs <- unique(pubs)
                       ############ Dataset 2 - Researcher-Period ############ 
 
 # Import df1 via Google Drive
-df1_id <- drive_get(id = '1xJCJi1YDIae1CeOated3UMlKB87bxKFs')
+df1_id <- drive_get(id = '1w94k-mZ7R66KNRMQvQcrS7TimmI-aDHI')
 df1 <- df1_id %>%
   drive_read_string(encoding = 'UTF-8') %>%
   read.delim(text = ., header = TRUE, sep = ",", strip.white = TRUE)
 
 # Only work with researchers with at least 3 publications
 f.res.list <- subset(df1[,-1], total_p>2)
-
-f.res.list <-
-  merge(f.res.list, researchers, by = "researcher_id", all.x = T)
-
 
 # Create empty dataframe
 df2 <- data.frame(
@@ -64,30 +60,31 @@ period <- c("T1", "T2", "T3", "T4", "T5")
 
 # Create periods
 for(i in f.res.list$researcher_id){
-  pub.list <- subset(pubs, researcher_id == "ur.01000000175.26") # Example for tryouts ur.01000000175.26
+  pub.list <- subset(pubs, researcher_id == i) # Example for tryouts ur.01000000175.26
   pub.list <- 
     merge(pub.list, f.res.list, by = "researcher_id", all.x = T)
-  pub.list$period <- ifelse(
-    pub.list$pub_year - pub.list$first_year < 3,
-    "T1",
-    ifelse(
-      pub.list$pub_year - pub.list$first_year > 2 &
-        pub.list$pub_year - pub.list$first_year < 6,
-      "T2",
+  pub.list <- pub.list %>%
+    mutate(period = ifelse(
+      pub.list$pub_year - pub.list$first_year < 3,
+      "T1",
       ifelse(
-        pub.list$pub_year - pub.list$first_year > 5 &
-          pub.list$pub_year - pub.list$first_year < 9,
-        "T3",
+        pub.list$pub_year - pub.list$first_year > 2 &
+          pub.list$pub_year - pub.list$first_year < 6,
+        "T2",
         ifelse(
-          pub.list$pub_year - pub.list$first_year > 8 &
-            pub.list$pub_year - pub.list$first_year < 12,
-          "T4",
-          "T5"
+          pub.list$pub_year - pub.list$first_year > 5 &
+            pub.list$pub_year - pub.list$first_year < 9,
+          "T3",
+          ifelse(
+            pub.list$pub_year - pub.list$first_year > 8 &
+              pub.list$pub_year - pub.list$first_year < 12,
+            "T4",
+            "T5"
+          )
         )
       )
-    )
-  )
-  
+    ))
+
   # Compute churning vars
   t1df <- subset(pub.list, period == "T1")
   T1 <- unique(t1df$cluster_id1)
@@ -236,7 +233,7 @@ for(i in f.res.list$researcher_id){
 }
 
 # Export data to Google Drive
-#write.csv(df2, file = "df2.txt") # Add local path
+write.csv(df2, file = "C:/Users/elrobinster/Downloads/df2.txt") # Add local path
 drive_upload(media = "C:/Users/elrobinster/Downloads/df2.txt", 
              path = as_id("1xIBEu0WX-Xq4aqbkM4C46RRDQoPO981r"),
              name = "df2.txt")
