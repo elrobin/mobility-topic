@@ -16,7 +16,7 @@ library(janitor)
 #| warning: false
 pubs <- read_delim("../../data/pubs.txt", delim = "\t", 
     escape_double = FALSE, trim_ws = TRUE)
-df1 <- read_csv("../../data/df1.txt")
+df1 <- read_csv("../../data/df1.txt") %>% select(-...1) %>% distinct()
 proof_concept_map <- read_delim("../../data/maps/proof_concept_map.txt", 
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE)
@@ -79,7 +79,9 @@ df_researchers <- df1 %>%
 ```{r}
 df_researchers %>% 
   group_by(mobility) %>% 
-  count()
+  count() %>% 
+  ungroup() %>% 
+  mutate(p=scales::percent(n/sum(n)))
 ```
 
 is this right? 20% of researchers are mobile?

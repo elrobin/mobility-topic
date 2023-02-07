@@ -158,7 +158,7 @@ The following objects are masked from 'package:stats':
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>pubs <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"../../data/pubs.txt"</span>, <span class="at">delim =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, </span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">escape_double =</span> <span class="cn">FALSE</span>, <span class="at">trim_ws =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>df1 <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../../data/df1.txt"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>df1 <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../../data/df1.txt"</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>...<span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">distinct</span>()</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>proof_concept_map <span class="ot">&lt;-</span> <span class="fu">read_delim</span>(<span class="st">"../../data/maps/proof_concept_map.txt"</span>, </span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">delim =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, <span class="at">escape_double =</span> <span class="cn">FALSE</span>, </span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">trim_ws =</span> <span class="cn">TRUE</span>)</span>
@@ -206,80 +206,140 @@ RCA_i = \frac{\frac{\#cluster_i^c}{\sum_j \#cluster_j^c}}{\frac{\#cluster_i}{\su
 <span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">country =</span> <span class="fu">toupper</span>(country))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>rca_topics_countries <span class="sc">%&gt;%</span> </span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> country, <span class="at">values_from =</span> RCA) <span class="sc">%&gt;%</span> </span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="sc">-</span>ES)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 2,843 × 6
-      id sublabel                                           AR    NL    ES    ZA
-   &lt;dbl&gt; &lt;chr&gt;                                           &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
- 1    28 Belle detector; branching fractions; top quar… 11.0   3.40   9.70 0.312
- 2  2571 LDM; ATSC 3.0; Layered Division Multiplexing;…  0.497 0      8.31 1.25 
- 3  2548 whole-body vibration; vibration training; WBV…  0     0.498  6.59 0.791
- 4  2986 necrosis factor-like weak inducer; weak induc…  0     0.803  6.35 0    
- 5  1019 hydroxytyrosol; oleuropein; virgin olive oil;…  2.02  0.232  5.87 0.820
- 6  3135 hoverflies; Vujic; Merodon; Syrphidae; Dolich…  0     0      5.17 2.92 
- 7  2685 SSR markers; wild grapevine; grapevine access…  1.82  0      5.17 0.508
- 8  2133 GMI effect; giant magnetoimpedance effect; am…  0.236 0.199  4.93 1.38 
- 9   543 yeast species; volatile compounds; aroma; hop…  4.23  0.566  4.83 2.69 
-10  1249 fatigue syndrome; fibromyalgia patients; FM p…  0.305 1.87   4.83 0.192
-# … with 2,833 more rows</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df_researchers <span class="ot">&lt;-</span> df1 <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mobility =</span> <span class="fu">case_when</span>(total_abroad<span class="sc">&gt;</span><span class="dv">0</span> <span class="sc">~</span><span class="st">'mobile'</span>, </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                              <span class="cn">TRUE</span> <span class="sc">~</span><span class="st">'non_mobile'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>df_researchers <span class="ot">&lt;-</span> df1 <span class="sc">%&gt;%</span> </span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mobility =</span> <span class="fu">case_when</span>(total_abroad<span class="sc">&gt;</span><span class="dv">0</span> <span class="sc">~</span><span class="st">'mobile'</span>, </span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                              <span class="cn">TRUE</span> <span class="sc">~</span><span class="st">'non_mobile'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>df_researchers <span class="sc">%&gt;%</span> </span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(mobility) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>df_researchers <span class="sc">%&gt;%</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(mobility) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">p=</span>scales<span class="sc">::</span><span class="fu">percent</span>(n<span class="sc">/</span><span class="fu">sum</span>(n)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 2 × 2
-# Groups:   mobility [2]
-  mobility       n
-  &lt;chr&gt;      &lt;int&gt;
-1 mobile     18103
-2 non_mobile 61745</code></pre>
+<pre><code># A tibble: 2 × 3
+  mobility       n p    
+  &lt;chr&gt;      &lt;int&gt; &lt;chr&gt;
+1 mobile     17971 23%  
+2 non_mobile 61745 77%  </code></pre>
 </div>
 </div>
 <p>is this right? 20% of researchers are mobile?</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> pubs <span class="sc">%&gt;%</span> </span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(df_researchers <span class="sc">%&gt;%</span> <span class="fu">select</span>(researcher_id,mobility), <span class="at">by =</span> <span class="st">"researcher_id"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(researchers <span class="sc">%&gt;%</span> <span class="fu">select</span>(researcher_id,country_code_origin), <span class="at">by =</span> <span class="st">'researcher_id'</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(rca_topics_countries, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">'country_code_origin'</span><span class="ot">=</span><span class="st">'country'</span>, <span class="st">'cluster_id1'</span><span class="ot">=</span><span class="st">'id'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> pubs <span class="sc">%&gt;%</span> </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(df_researchers <span class="sc">%&gt;%</span> <span class="fu">select</span>(researcher_id,mobility), <span class="at">by =</span> <span class="st">"researcher_id"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(researchers <span class="sc">%&gt;%</span> <span class="fu">select</span>(researcher_id,country_code_origin), <span class="at">by =</span> <span class="st">'researcher_id'</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(rca_topics_countries, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">'country_code_origin'</span><span class="ot">=</span><span class="st">'country'</span>, <span class="st">'cluster_id1'</span><span class="ot">=</span><span class="st">'id'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(mobility) <span class="sc">%&gt;%</span> </span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(mobility) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 2 × 2
   mobility   mean_rca
   &lt;chr&gt;         &lt;dbl&gt;
-1 mobile         2.96
+1 mobile         2.99
 2 non_mobile     2.71</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mobility<span class="sc">==</span><span class="st">'mobile'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(foreign_country) <span class="sc">%&gt;%</span> </span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mobility<span class="sc">==</span><span class="st">'mobile'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(foreign_country) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 2 × 2
   foreign_country mean_rca
             &lt;dbl&gt;    &lt;dbl&gt;
-1               0     3.06
-2               1     2.78</code></pre>
+1               0     3.07
+2               1     2.84</code></pre>
 </div>
 </div>
 <ol type="1">
 <li>Mobile authors seem to be more specialized in the topics of their country of origin than non-mobile authors (unexpected),</li>
 <li>But they are more specialized when they are publishing from home, than when they publish on a foreign country (expected).</li>
 </ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code_origin, mobility) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'country_code_origin'. You can override
+using the `.groups` argument.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 3
+# Groups:   country_code_origin [4]
+  country_code_origin mobility   mean_rca
+  &lt;chr&gt;               &lt;chr&gt;         &lt;dbl&gt;
+1 AR                  mobile         5.71
+2 AR                  non_mobile     4.27
+3 ES                  mobile         3.20
+4 ES                  non_mobile     2.81
+5 NL                  mobile         1.81
+6 NL                  non_mobile     1.67
+7 ZA                  mobile         4.29
+8 ZA                  non_mobile     4.95</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mobility<span class="sc">==</span><span class="st">'mobile'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code_origin, foreign_country) <span class="sc">%&gt;%</span> </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'country_code_origin'. You can override
+using the `.groups` argument.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 3
+# Groups:   country_code_origin [4]
+  country_code_origin foreign_country mean_rca
+  &lt;chr&gt;                         &lt;dbl&gt;    &lt;dbl&gt;
+1 AR                                0     6.79
+2 AR                                1     2.99
+3 ES                                0     3.10
+4 ES                                1     3.38
+5 NL                                0     1.93
+6 NL                                1     1.63
+7 ZA                                0     4.49
+8 ZA                                1     3.86</code></pre>
+</div>
+</div>
+<ul>
+<li>Results reproduce for each country, on different levels of specificity (AR&gt;ZA&gt;ES&gt;NL) (expected).</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code_origin, mobility,pub_year) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(pub_year,mean_rca, <span class="at">color=</span>mobility))<span class="sc">+</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(.<span class="sc">~</span>country_code_origin)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'country_code_origin', 'mobility'. You can
+override using the `.groups` argument.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="RCA_countries_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(country_code_origin, foreign_country,pub_year) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_rca =</span> <span class="fu">mean</span>(RCA,<span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(pub_year,mean_rca, <span class="at">color=</span><span class="fu">factor</span>(foreign_country)))<span class="sc">+</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()<span class="sc">+</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(.<span class="sc">~</span>country_code_origin)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'country_code_origin', 'foreign_country'.
+You can override using the `.groups` argument.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="RCA_countries_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
 </section>
 </section>
 
