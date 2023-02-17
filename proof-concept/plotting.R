@@ -58,7 +58,56 @@ df2_subset <- df2_clean[variables]
 # Remove T5 rows
 df2_final <- df2_subset[df2_subset$period != "T5", ]
 
-# PLOTS
+## Data grouping for plotting purposes
+# Group researchers by proportion of new topics and mobility
+df2_final_grouped_new_topics <- df2_final %>% group_by(proportion_new_topics, mobility) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_new_topics <- (na.omit(df2_final_grouped_new_topics))
+
+# Group researchers by proportion of same topics and mobility
+df2_final_grouped_same_topics <- df2_final %>% group_by(proportion_same_topics, mobility) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_same_topics <- (na.omit(df2_final_grouped_same_topics))
+
+# Group researchers by proportion of lost topics and mobility
+df2_final_grouped_lost_topics <- df2_final %>% group_by(proportion_lost_topics, mobility) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_lost_topics <- (na.omit(df2_final_grouped_lost_topics))
+
+# Group researchers by proportion of new topics and period
+df2_final_grouped_new_topics_period <- df2_final %>% group_by(proportion_new_topics, period) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_new_topics_period <- (na.omit(df2_final_grouped_new_topics_period))
+
+#Group researchers by proportion of same topics and period
+df2_final_grouped_same_topics_period <- df2_final %>% group_by(proportion_same_topics, period) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_same_topics_period <- (na.omit(df2_final_grouped_same_topics_period))
+
+#Group researchers by proportion of lost topics and period
+df2_final_grouped_lost_topics_period <- df2_final %>% group_by(proportion_lost_topics, period) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_lost_topics_period <- (na.omit(df2_final_grouped_lost_topics_period))
+
+## Plots
 # 0) df2 correlogram per period
 ggpairs(df2_final, columns = 3:7, ggplot2::aes(colour=period), title = "df2 correlogram per period") +
   xlim(0, 1) +
@@ -132,31 +181,7 @@ ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_lost_topics, 
   ylab("Proportion of lost topics")
 ggsave("6.png")
 
-
-## Data grouping for plotting purposes
-# Group researchers by mobility/affiliation and country of origin
-df2_final_grouped_new_topics <- df2_final %>% group_by(proportion_new_topics, mobility) %>% 
-  summarise(count = n(),.groups = 'drop') %>%
-  as.data.frame()
-
-# Remove NA rows
-df2_final_grouped_new_topics <- (na.omit(df2_final_grouped_new_topics))
-
-df2_final_grouped_same_topics <- df2_final %>% group_by(proportion_same_topics, mobility) %>% 
-  summarise(count = n(),.groups = 'drop') %>%
-  as.data.frame()
-
-# Remove NA rows
-df2_final_grouped_same_topics <- (na.omit(df2_final_grouped_same_topics))
-
-df2_final_grouped_lost_topics <- df2_final %>% group_by(proportion_lost_topics, mobility) %>% 
-  summarise(count = n(),.groups = 'drop') %>%
-  as.data.frame()
-
-# Remove NA rows
-df2_final_grouped_lost_topics <- (na.omit(df2_final_grouped_lost_topics))
-
-# 7) CONTINUAR
+# 7) Proportion of new, same and lost topics per mobility type
 plot7A <- ggplot(df2_final_grouped_new_topics, aes(x = proportion_new_topics, y = count, color = mobility)) +
             geom_line() +
             ylim(0, 25000) +
@@ -185,30 +210,7 @@ grid.arrange(plot7A, plot7B, plot7C, nrow = 1)
 grid7 <- arrangeGrob(plot7A, plot7B, plot7C, nrow=1)
 ggsave("7.png", grid7)
 
-# 8)
-## Data grouping for plotting purposes
-# Group researchers by mobility/affiliation and country of origin
-df2_final_grouped_new_topics_period <- df2_final %>% group_by(proportion_new_topics, period) %>% 
-  summarise(count = n(),.groups = 'drop') %>%
-  as.data.frame()
-
-# Remove NA rows
-df2_final_grouped_new_topics_period <- (na.omit(df2_final_grouped_new_topics_period))
-
-df2_final_grouped_same_topics_period <- df2_final %>% group_by(proportion_same_topics, period) %>% 
-  summarise(count = n(),.groups = 'drop') %>%
-  as.data.frame()
-
-# Remove NA rows
-df2_final_grouped_same_topics_period <- (na.omit(df2_final_grouped_same_topics_period))
-
-df2_final_grouped_lost_topics_period <- df2_final %>% group_by(proportion_lost_topics, period) %>% 
-  summarise(count = n(),.groups = 'drop') %>%
-  as.data.frame()
-
-# Remove NA rows
-df2_final_grouped_lost_topics_period <- (na.omit(df2_final_grouped_lost_topics_period))
-
+# 8) Proportion of new, same and lost topics per time period
 plot8A <- ggplot(df2_final_grouped_new_topics_period, aes(x = proportion_new_topics, y = count, color = period)) +
   geom_line() +
   #ylim(0, 25000) +
