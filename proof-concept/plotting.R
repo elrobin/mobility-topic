@@ -126,6 +126,18 @@ ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_new_topics,
   ylab("Proportion of new topics")
 ggsave("1.png")
 
+# 1A) Proportion of new topics by proportion of publications abroad per time period (facet wrap presentation)
+ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_new_topics, color = period)) +
+  geom_point() +
+  facet_wrap(~period) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme_minimal() +
+  ggtitle("Proportion of new topics by proportion of publications abroad per time period") +
+  xlab("Proportion of publications abroad") +
+  ylab("Proportion of new topics")
+ggsave("1A.jpg")
+
 # 2) Proportion of same topics by proportion of publications abroad per time period
 ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_same_topics, color = period)) +
   geom_point() +
@@ -136,6 +148,18 @@ ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_same_topics
   xlab("Proportion of publications abroad") +
   ylab("Proportion of same topics")
 ggsave("2.png")
+
+# 2A) Proportion of same topics by proportion of publications abroad per time period (facet wrap presentation)
+ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_same_topics, color = period)) +
+  geom_point() +
+  facet_wrap(~period) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme_minimal() +
+  ggtitle("Proportion of same topics by proportion of publications abroad per time period") +
+  xlab("Proportion of publications abroad") +
+  ylab("Proportion of same topics")
+ggsave("2A.jpg")
 
 # 3) Proportion of lost topics by proportion of publications abroad per time period
 ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_lost_topics, color = period)) +
@@ -148,6 +172,18 @@ ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_lost_topics
   ylab("Proportion of lost topics")
 ggsave("3.png")
 
+# 3A) Proportion of lost topics by proportion of publications abroad per time period (facet wrap presentation)
+ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_lost_topics, color = period)) +
+  geom_point() +
+  facet_wrap(~period) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme_minimal() +
+  ggtitle("Proportion of lost topics by proportion of publications abroad per time period") +
+  xlab("Proportion of publications abroad") +
+  ylab("Proportion of lost topics")
+ggsave("3A.jpg")
+
 # 4) Proportion of new topics by proportion of publications home per time period
 ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_new_topics, color = period)) +
   geom_point() +
@@ -158,6 +194,18 @@ ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_new_topics, c
   xlab("Proportion of publications home") +
   ylab("Proportion of new topics")
 ggsave("4.png")
+
+# 4A) Proportion of new topics by proportion of publications home per time period (facet wrap presentation)
+ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_new_topics, color = period)) +
+  geom_point() +
+  facet_wrap(~period) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme_minimal() +
+  ggtitle("Proportion of new topics by proportion of publications home per time period") +
+  xlab("Proportion of publications home") +
+  ylab("Proportion of new topics")
+ggsave("4A.jpg")
 
 # 5) Proportion of same topics by proportion of publications home per time period
 ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_same_topics, color = period)) +
@@ -170,6 +218,18 @@ ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_same_topics, 
   ylab("Proportion of same topics")
 ggsave("5.png")
 
+# 5A) Proportion of same topics by proportion of publications home per time period (facet wrap presentation)
+ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_same_topics, color = period)) +
+  geom_point() +
+  facet_wrap(~period) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme_minimal() +
+  ggtitle("Proportion of same topics by proportion of publications home per time period") +
+  xlab("Proportion of publications home") +
+  ylab("Proportion of same topics")
+ggsave("5A.jpg")
+
 # 6) Proportion of lost topics by proportion of publications home per time period
 ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_lost_topics, color = period)) +
   geom_point() +
@@ -180,6 +240,18 @@ ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_lost_topics, 
   xlab("Proportion of publications home") +
   ylab("Proportion of lost topics")
 ggsave("6.png")
+
+# 6A) Proportion of lost topics by proportion of publications home per time period (facet wrap presentation)
+ggplot(df2_final, aes(x = proportion_p_home_period, y = proportion_lost_topics, color = period)) +
+  geom_point() +
+  facet_wrap(~period) +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme_minimal() +
+  ggtitle("Proportion of lost topics by proportion of publications home per time period") +
+  xlab("Proportion of publications home") +
+  ylab("Proportion of lost topics")
+ggsave("6A.jpg")
 
 # 7) Proportion of new, same and lost topics per mobility type
 plot7A <- ggplot(df2_final_grouped_new_topics, aes(x = proportion_new_topics, y = count, color = mobility)) +
