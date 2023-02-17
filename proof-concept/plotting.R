@@ -51,12 +51,38 @@ df2_clean$mobility <- ifelse(df2_clean$proportion_p_abroad_period == 0, "home",
                                              )
                                       )
 
+# Remove T5 rows
+df2_clean <- df2_clean[df2_clean$period != "T5", ]
+
 # Select variables for subset dataframe
 variables <- c("researcher_id", "period", "proportion_p_abroad_period", "proportion_p_home_period", "proportion_new_topics", "proportion_lost_topics", "proportion_same_topics", "mobility")
-df2_subset <- df2_clean[variables]
+df2_final <- df2_clean[variables]
 
-# Remove T5 rows
-df2_final <- df2_subset[df2_subset$period != "T5", ]
+# Select variables for trajectories dataframe
+variables2 <- c("researcher_id", "period", "p", "new_topics", "mobility")
+df2_trajectories <- df2_clean[variables2]
+
+# Keep only researchers with publications in every period and remove rows with NA values
+df2_trajectories <- df2_trajectories[df2_trajectories$researcher_id %in% names(which(table(df2_trajectories$researcher_id) == 4)), ]
+#df2_trajectories <- (na.omit(df2_trajectories))
+
+# Create trajectory variable
+df2_trajectories$trajectory <- ifelse(df2_trajectories$mobility == "abroad", "A",
+                                      ifelse(df2_trajectories$mobility == "transition", "T",
+                                             ifelse(df2_trajectories$mobility == "home", "H", NA)
+                                             )
+                                      )
+
+# Group trajectory values into one cell per ID
+df2_trajectories_summary <- df2_trajectories %>%
+                            group_by(researcher_id) %>%
+                            summarise(trajectory = paste0(trajectory, collapse = " "))
+
+# Copy trajectory values as many times as there are rows with the same ID
+df2_trajectories_merged <- merge(df2_trajectories, df2_trajectories_summary, by = "researcher_id", all.x = TRUE)
+
+# Select special cases
+df2_trajectories_subset <- subset(df2_trajectories_merged, trajectory.y %in% c("H H H H", "H T A A", "H T H H", "H H H T", "H A A A", "H A H H", "H H H A"))
 
 ## Data grouping for plotting purposes
 # Group researchers by proportion of new topics and mobility
@@ -91,7 +117,7 @@ df2_final_grouped_new_topics_period <- df2_final %>% group_by(proportion_new_top
 # Remove NA rows
 df2_final_grouped_new_topics_period <- (na.omit(df2_final_grouped_new_topics_period))
 
-#Group researchers by proportion of same topics and period
+# Group researchers by proportion of same topics and period
 df2_final_grouped_same_topics_period <- df2_final %>% group_by(proportion_same_topics, period) %>% 
   summarise(count = n(),.groups = 'drop') %>%
   as.data.frame()
@@ -99,13 +125,21 @@ df2_final_grouped_same_topics_period <- df2_final %>% group_by(proportion_same_t
 # Remove NA rows
 df2_final_grouped_same_topics_period <- (na.omit(df2_final_grouped_same_topics_period))
 
-#Group researchers by proportion of lost topics and period
+# Group researchers by proportion of lost topics and period
 df2_final_grouped_lost_topics_period <- df2_final %>% group_by(proportion_lost_topics, period) %>% 
   summarise(count = n(),.groups = 'drop') %>%
   as.data.frame()
 
 # Remove NA rows
 df2_final_grouped_lost_topics_period <- (na.omit(df2_final_grouped_lost_topics_period))
+
+# Group researchers by period and mobility
+df2_final_grouped_period_mobility <- df2_final %>% group_by(period, mobility) %>% 
+  summarise(count = n(),.groups = 'drop') %>%
+  as.data.frame()
+
+# Remove NA rows
+df2_final_grouped_period_mobility <- (na.omit(df2_final_grouped_period_mobility))
 
 ## Plots
 # 0) df2 correlogram per period
@@ -114,6 +148,12 @@ ggpairs(df2_final, columns = 3:7, ggplot2::aes(colour=period), title = "df2 corr
   ylim(0, 1) +
   theme_minimal()
 ggsave("0.png")
+
+# 0A) df2 correlogram
+ggcorr(df2_final[, -c(1, 2, 8)], method = c("pairwise", "pearson")) +
+  theme_minimal() +
+  ggtitle("df2 correlogram")
+ggsave("0A.jpg")
 
 # 1) Proportion of new topics by proportion of publications abroad per time period
 ggplot(df2_final, aes(x = proportion_p_abroad_period, y = proportion_new_topics, color = period)) +
@@ -310,3 +350,28 @@ plot8C <- ggplot(df2_final_grouped_lost_topics_period, aes(x = proportion_lost_t
 grid.arrange(plot8A, plot8B, plot8C, nrow = 1)
 grid8 <- arrangeGrob(plot8A, plot8B, plot8C, nrow=1)
 ggsave("8.png", grid8)
+
+# 9) Trajectories
+ggplot(df2_final_grouped_period_mobility, aes(x = period, y = count, fill = mobility, color = mobility)) +
+  geom_boxplot() +
+  theme_minimal() +
+  ggtitle("Trajectories") +
+  xlab("Period") +
+  ylab("Count")
+
+ggplot(df2_trajectories, aes(x = period, y = new_topics, fill = mobility, color = mobility)) +
+  geom_boxplot() +
+  theme_minimal() +
+  ggtitle("Trajectories trial 2") +
+  xlab("Period") +
+  ylab("Number of new topics")
+
+# 9C) Success!
+ggplot(df2_trajectories_subset, aes(x = period, y = new_topics, fill = trajectory.y, color = trajectory.y)) +
+  geom_boxplot() +
+  theme_minimal() +
+  ylim(0, 20) +
+  ggtitle("Trajectories trial 3") +
+  xlab("Period") +
+  ylab("Number of new topics")
+ggsave("9C.jpg")
