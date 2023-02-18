@@ -64,7 +64,6 @@ df2_trajectories <- df2_clean[variables2]
 
 # Keep only researchers with publications in every period and remove rows with NA values
 df2_trajectories <- df2_trajectories[df2_trajectories$researcher_id %in% names(which(table(df2_trajectories$researcher_id) == 4)), ]
-#df2_trajectories <- (na.omit(df2_trajectories))
 
 # Create trajectory variable
 df2_trajectories$trajectory <- ifelse(df2_trajectories$mobility == "abroad", "A",
@@ -84,6 +83,13 @@ df2_trajectories_merged <- merge(df2_trajectories, df2_trajectories_summary, by 
 # Select special cases
 df2_trajectories_subset <- subset(df2_trajectories_merged, trajectory.y %in% c("H H H H", "H T A A", "H T H H", "H H H T", "H A A A", "H A H H", "H H H A"))
 
+# Group T/A cases together
+df2_trajectories_subset$trajectory <- factor(df2_trajectories_subset$trajectory.y,
+                                             levels = c("H H H H", "H T A A", "H T H H", "H H H T", "H A A A", "H A H H", "H H H A"),
+                                             labels = c("H H H H", "H T/A A A", "H T/A H H", "H H H T/A", "H T/A A A", "H T/A H H", "H H H T/A"))
+
+
+###
 ## Data grouping for plotting purposes
 # Group researchers by proportion of new topics and mobility
 df2_final_grouped_new_topics <- df2_final %>% group_by(proportion_new_topics, mobility) %>% 
@@ -141,6 +147,8 @@ df2_final_grouped_period_mobility <- df2_final %>% group_by(period, mobility) %>
 # Remove NA rows
 df2_final_grouped_period_mobility <- (na.omit(df2_final_grouped_period_mobility))
 
+
+###
 ## Plots
 # 0) df2 correlogram per period
 ggpairs(df2_final, columns = 3:7, ggplot2::aes(colour=period), title = "df2 correlogram per period") +
@@ -367,11 +375,11 @@ ggplot(df2_trajectories, aes(x = period, y = new_topics, fill = mobility, color 
   ylab("Number of new topics")
 
 # 9C) Success!
-ggplot(df2_trajectories_subset, aes(x = period, y = new_topics, fill = trajectory.y, color = trajectory.y)) +
+ggplot(df2_trajectories_subset, aes(x = period, y = new_topics, fill = trajectory, color = trajectory)) +
   geom_boxplot() +
   theme_minimal() +
   ylim(0, 20) +
-  ggtitle("Trajectories trial 3") +
-  xlab("Period") +
+  ggtitle("Researchers' trajectories according to number of new topics and time period") +
+  xlab("Time period") +
   ylab("Number of new topics")
-ggsave("9C.jpg")
+ggsave("9.jpg")
