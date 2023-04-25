@@ -237,5 +237,5 @@ df2.str[,-c(1,2)] <- mutate_all(df2.str[,-c(1,2)], function(x) as.numeric(x))
 df2 <- df2.str
 # Export data to Google Drive
 write.csv(df2, file = "C:/Users/Nicolas/Downloads/df2.txt") # Add local path
-drive_update(media = "C:/Users/Nicolas/Downloads/df2.txt", 
-             file = as_id("1xIBEu0WX-Xq4aqbkM4C46RRDQoPO981r"))
+googledrive::drive_update(media = "C:/Users/Nicolas/Downloads/df2.txt", 
+             file = googledrive::as_id("1xIBEu0WX-Xq4aqbkM4C46RRDQoPO981r"))
