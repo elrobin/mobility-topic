@@ -1,0 +1,140 @@
+---
+title: "Test-Longitudinal Network Analysis"
+author: "Nicolas Robinson-Garcia"
+format: html
+editor: visual
+---
+
+# Mock-up analysis
+
+I want to analyze how the topical space of researchers changes over time. For this, I am going to conduct a longitudinal network analysis. First I will play around with made up data extracted from ChatGPT to better understand how this works.
+
+## Data structure
+
+Here is some mock data for an individual with three networks from three different points in time, in which the position of nodes come from a larger network structure and are fixed:
+
+```{r}
+
+# Load the required packages
+library(igraph)
+library(statnet)
+
+# Define the larger campus network
+campus_network <- make_graph(~ Alice-Bob:Claire, Bob-Claire, David-Emma, Emma-Frank:Zoe)
+
+# Define the networks for each student at each time point
+alice_t1_nodes <- c("Alice", "Bob", "Claire")
+alice_t1_edges <- cbind(c("Alice", "Alice"), c("Bob", "Claire"))
+alice_t2_nodes <- c("Alice", "Bob", "Dave")
+alice_t2_edges <- cbind(c("Alice", "Alice"), c("Bob", "Dave"))
+alice_t3_nodes <- c("Alice", "Bob", "Dave", "Claire")
+alice_t3_edges <- cbind(c("Alice", "Alice", "Bob"), c("Bob", "Dave", "Claire"))
+
+bob_t1_nodes <- c("Bob", "Alice", "Claire")
+bob_t1_edges <- cbind(c("Bob", "Bob"), c("Alice", "Claire"))
+bob_t2_nodes <- c("Bob", "Alice", "Claire", "Dave", "Frank")
+bob_t2_edges <- cbind(c("Bob", "Bob", "Bob", "Frank"), c("Alice", "Claire", "Dave", "Dave"))
+bob_t3_nodes <- c("Bob", "Alice", "Claire", "Dave", "Frank")
+bob_t3_edges <- cbind(c("Bob", "Bob", "Bob", "Frank"), c("Alice", "Claire", "Dave", "Dave"))
+
+claire_t1_nodes <- c("Claire", "Alice", "Bob")
+claire_t1_edges <- cbind(c("Claire", "Claire"), c("Alice", "Bob"))
+claire_t2_nodes <- c("Claire", "Bob", "Dave")
+claire_t2_edges <- cbind(c("Claire", "Claire"), c("Bob", "Dave"))
+claire_t3_nodes <- c("Claire", "Bob", "Dave", "Alice")
+claire_t3_edges <- cbind(c("Claire", "Claire", "Bob"), c("Bob", "Dave", "Alice"))
+
+# Create a longitudinal network object
+alice_networks <- list(
+  network(alice_t1_edges, vertex.attr = list(name = alice_t1_nodes)),
+  network(alice_t2_edges, vertex.attr = list(name = alice_t2_nodes)),
+  network(alice_t3_edges, vertex.attr = list(name = alice_t3_nodes))
+)
+
+bob_networks <- list(
+  network(bob_t1_edges, vertex.attr = list(name = bob_t1_nodes)),
+  network(bob_t2_edges, vertex.attr = list(name = bob_t2_nodes)),
+  network(bob_t3_edges, vertex.attr = list(name = bob_t3_nodes))
+)
+
+claire_networks <- list(
+  network(claire_t1_edges, vertex.attr = list(name = claire_t1_nodes)),
+  network(claire_t2_edges, vertex.attr = list(name = claire_t2_nodes)),
+  network(claire_t3_edges, vertex.attr = list(name = claire_t3_nodes))
+)
+
+# Define a function to convert the list of edge lists and node names to an igraph object
+list_to_igraph <- function(elist, vnames) {
+  g <- graph_from_edgelist(elist, directed = FALSE)
+  V(g)$name <- vnames
+  return(g)
+}
+
+# Convert each student's network at each time point to an igraph object
+alice_networks_igraph <- lapply(alice_networks, function(x) list_to_igraph(elist = x$el, vnames = x %v% "name"))
+bob_networks_igraph <- lapply(bob_networks, function(x) list_to_igraph(elist = x$el, vnames = x %v% "name"))
+claire_networks_igraph <- lapply(claire_networks, function(x) list_to_igraph(elist = x$el, vnames = x %v% "name"))
+
+# Combine all student networks into one longitudinal network object
+longitudinal_network <- network.initialize(
+  N = length(campus_nodes),
+  directed = FALSE,
+  hyper = FALSE,
+  multiple = TRUE,
+  loops = FALSE,
+  bipartite = FALSE,
+  vertex.attr = list(name = campus_nodes)
+)
+longitudinal_network <- network.join(longitudinal_network, alice_networks_igraph)
+longitudinal_network <- network.join(longitudinal_network, bob_networks_igraph)
+longitudinal_network <- network.join(longitudinal_network, claire_networks_igraph)
+
+```
+
+To visualize them I need to use the `ggraph`. Let's see how it works.
+
+```{r}
+library(ggraph)
+
+network_list <- network_list[-null_graph_idx]
+igraph_list <- lapply(network_list, function(net) {
+  # Extract the adjacency matrix from the network object
+  adj_matrix <- as.matrix(net$graph)
+  
+  # Convert the adjacency matrix to an igraph object
+  igraph_from_adjacency_matrix(adj_matrix, mode = "undirected")
+})
+
+# Create a data frame with network and time point information for each node
+node_info <- data.frame(
+  node = igraph::V(combined_network)$name,
+  network = rep(1:length(network_list), each = length(network_list[[1]]$nodes))
+)
+
+# Plot the network at each time point separately
+ggraph(combined_network, layout = "xy") +
+  geom_edge_link() +
+  geom_node_point(aes(x = x, y = y)) +
+  facet_grid(~network) +
+  scale_x_continuous(limits = c(0, 4)) +
+  scale_y_continuous(limits = c(0, 4)) +
+  labs(title = "Longitudinal Network Visualization")
+
+```
+
+# Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
