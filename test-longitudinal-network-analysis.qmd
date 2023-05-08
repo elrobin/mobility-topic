@@ -7,87 +7,56 @@ editor: visual
 
 # Mock-up analysis
 
-I want to analyze how the topical space of researchers changes over time. For this, I am going to conduct a longitudinal network analysis. First I will play around with made up data extracted from ChatGPT to better understand how this works.
+I want to analyze how the topical space of researchers changes over time. For this, I am going to conduct a longitudinal network analysis. First I will play around with made up data to learn iGraph
 
-## Data structure
+## Data formats and viz
 
-Here is some mock data for an individual with three networks from three different points in time, in which the position of nodes come from a larger network structure and are fixed:
+Here is some mock data for an individual with three networks from three different points in time of places they've been at:
 
 ```{r}
 
 # Load the required packages
 library(igraph)
 library(statnet)
+library(network)
+library(networkDynamic)
 
-# Define the larger campus network
-campus_network <- make_graph(~ Alice-Bob:Claire, Bob-Claire, David-Emma, Emma-Frank:Zoe)
 
-# Define the networks for each student at each time point
-alice_t1_nodes <- c("Alice", "Bob", "Claire")
-alice_t1_edges <- cbind(c("Alice", "Alice"), c("Bob", "Claire"))
-alice_t2_nodes <- c("Alice", "Bob", "Dave")
-alice_t2_edges <- cbind(c("Alice", "Alice"), c("Bob", "Dave"))
-alice_t3_nodes <- c("Alice", "Bob", "Dave", "Claire")
-alice_t3_edges <- cbind(c("Alice", "Alice", "Bob"), c("Bob", "Dave", "Claire"))
-
-bob_t1_nodes <- c("Bob", "Alice", "Claire")
-bob_t1_edges <- cbind(c("Bob", "Bob"), c("Alice", "Claire"))
-bob_t2_nodes <- c("Bob", "Alice", "Claire", "Dave", "Frank")
-bob_t2_edges <- cbind(c("Bob", "Bob", "Bob", "Frank"), c("Alice", "Claire", "Dave", "Dave"))
-bob_t3_nodes <- c("Bob", "Alice", "Claire", "Dave", "Frank")
-bob_t3_edges <- cbind(c("Bob", "Bob", "Bob", "Frank"), c("Alice", "Claire", "Dave", "Dave"))
-
-claire_t1_nodes <- c("Claire", "Alice", "Bob")
-claire_t1_edges <- cbind(c("Claire", "Claire"), c("Alice", "Bob"))
-claire_t2_nodes <- c("Claire", "Bob", "Dave")
-claire_t2_edges <- cbind(c("Claire", "Claire"), c("Bob", "Dave"))
-claire_t3_nodes <- c("Claire", "Bob", "Dave", "Alice")
-claire_t3_edges <- cbind(c("Claire", "Claire", "Bob"), c("Bob", "Dave", "Alice"))
-
-# Create a longitudinal network object
-alice_networks <- list(
-  network(alice_t1_edges, vertex.attr = list(name = alice_t1_nodes)),
-  network(alice_t2_edges, vertex.attr = list(name = alice_t2_nodes)),
-  network(alice_t3_edges, vertex.attr = list(name = alice_t3_nodes))
+triangle <- network.initialize(3) # Create toy network
+add.edge(triangle, 1, 2) # add an edge between vertices 1 and 2
+add.edge(triangle, 2, 3) # add another edge
+activate.edges(triangle, at = 1) # turn on all edges at time 1 only
+activate.edges(triangle, 
+  onset = 2,
+  terminus = 3,
+  e = get.edgeIDs(triangle, v = 1, alter = 2)
 )
 
-bob_networks <- list(
-  network(bob_t1_edges, vertex.attr = list(name = bob_t1_nodes)),
-  network(bob_t2_edges, vertex.attr = list(name = bob_t2_nodes)),
-  network(bob_t3_edges, vertex.attr = list(name = bob_t3_nodes))
+add.edges.active(
+  triangle,
+  onset = 4,
+  length = 2,
+  tail = 3,
+  head = 1
 )
 
-claire_networks <- list(
-  network(claire_t1_edges, vertex.attr = list(name = claire_t1_nodes)),
-  network(claire_t2_edges, vertex.attr = list(name = claire_t2_nodes)),
-  network(claire_t3_edges, vertex.attr = list(name = claire_t3_nodes))
+} # handmade degree function
+plot(triangle,main='ignoring dynamics',displaylabels=T)
+plot(
+  network.extract(triangle, onset = 1, terminus = 2),
+  main = 'at time 1',
+  displaylabels = T
 )
-
-# Define a function to convert the list of edge lists and node names to an igraph object
-list_to_igraph <- function(elist, vnames) {
-  g <- graph_from_edgelist(elist, directed = FALSE)
-  V(g)$name <- vnames
-  return(g)
-}
-
-# Convert each student's network at each time point to an igraph object
-alice_networks_igraph <- lapply(alice_networks, function(x) list_to_igraph(elist = x$el, vnames = x %v% "name"))
-bob_networks_igraph <- lapply(bob_networks, function(x) list_to_igraph(elist = x$el, vnames = x %v% "name"))
-claire_networks_igraph <- lapply(claire_networks, function(x) list_to_igraph(elist = x$el, vnames = x %v% "name"))
-
-# Combine all student networks into one longitudinal network object
-longitudinal_network <- network.initialize(
-  N = length(campus_nodes),
-  directed = FALSE,
-  hyper = FALSE,
-  multiple = TRUE,
-  loops = FALSE,
-  bipartite = FALSE,
-  vertex.attr = list(name = campus_nodes)
+plot(
+  network.extract(triangle, onset = 2, terminus = 3),
+  main = 'at time 2',
+  displaylabels = T
 )
-longitudinal_network <- network.join(longitudinal_network, alice_networks_igraph)
-longitudinal_network <- network.join(longitudinal_network, bob_networks_igraph)
-longitudinal_network <- network.join(longitudinal_network, claire_networks_igraph)
+plot(
+  network.extract(triangle, onset = 5, terminus = 6),
+  main = 'at time 5',
+  displaylabels = T
+)
 
 ```
 
