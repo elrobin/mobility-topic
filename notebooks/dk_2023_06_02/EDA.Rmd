@@ -81,19 +81,34 @@ df_authors <- df %>%
   summarise(first_year = unique(first_year),
             active_years = unique(active_years),
             country_code = unique(country_code),
+            mobile = length(unique(country_code))>1,
             n_papers = length(unique(pub_id)),
             n_LR_main_field = length(unique(LR_main_field)),
             ntopics = length(unique(cluster_id1)))
 ```
 
+
 ```{r}
 df_authors
 ```
+Mobile researchers
+
+```{r}
+prop_mobile <- df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(mobile = length(unique(country_code))>1) %>% 
+  pull(mobile) %>% table()
+
+prop_mobile/sum(prop_mobile)
+```
+
+__doubt__ why we have 45% of authors with more than one country?
 
 ```{r}
 df_authors %>% 
   group_by(n_papers) %>% 
   summarise(n_authors = n(),
+            prop_mobile = mean(mobile),
             avg_n_fields =mean(n_LR_main_field/n_papers),
             avg_n_topics =mean(ntopics/n_papers))
 ```
@@ -133,7 +148,6 @@ Seems to be stable across countries. Taking authors with more than 10 papers mig
 
 ```{r fig.width=10}
 
-
 df_authors %>% 
   filter(country_code %in% large_countries,
          n_papers>10) %>% 
@@ -146,6 +160,7 @@ df_authors %>%
   geom_col()+
   theme(legend.position = 'none')
 ```
+
 ## authorship
 
 ```{r}
@@ -203,3 +218,16 @@ bind_rows(list(single_authors,corr_authors,non_corr_authors)) %>%
   geom_col()
 ```
 
+## Mobility
+
+```{r}
+df_authors %>% 
+  group_by(mobile) %>% 
+  summarise(n_authors = n(),
+            avg_field_per_paper =mean(n_LR_main_field/n_papers),
+            avg_topics_per_paper =mean(ntopics/n_papers)) %>% 
+  ggplot(aes(mobile, avg_topics_per_paper, fill = mobile))+
+  geom_col()
+```
+
+Mobile researchers are more focused on their topics
