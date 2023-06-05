@@ -28,6 +28,9 @@ df
 ```{r}
 df$pub_id %>% unique() %>% length()
 ```
+```{r}
+df$Researcher_id %>% unique() %>% length()
+```
 
 ```{r}
 table(df$active_years)
