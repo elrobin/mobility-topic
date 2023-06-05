@@ -1,0 +1,236 @@
+---
+title: "June Granada"
+output: html_notebook
+---
+
+
+```{r setup}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
+```
+
+_CS_individuals_jun2023._ It includes Dimensions data of researchers who started publishing from 2007 onwards (this is the earliest date for which we have topics), have been active for 10 years (published at least 1 paper in 10 different years), excluding the 25 most productive percentile of researchers.
+
+```{r}
+colsn <- 
+c('Researcher_id','first_year','active_years','pub_year','pub_id','country_code',
+  'author_seq','is_corresponding_author','cluster_id1','LR_main_field')
+
+df <- read_delim('../../data/CS_individuals_jun23.csv',delim = ';',col_names = colsn)
+```
+
+## dataset exploration
+
+```{r}
+df
+```
+
+```{r}
+df$pub_id %>% unique() %>% length()
+```
+```{r}
+df$Researcher_id %>% unique() %>% length()
+```
+
+```{r}
+table(df$active_years)
+```
+
+```{r}
+df %>% 
+  ggplot(aes(first_year)) +
+  geom_histogram()
+```
+
+
+```{r}
+df %>% 
+  ggplot(aes(first_year,active_years)) +
+  geom_hex()
+```
+## Productivity
+
+```{r}
+df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(first_year = unique(first_year),
+            n_papers = length(unique(pub_id))) %>% 
+  group_by(first_year) %>% 
+  summarise(n_papers=mean(n_papers))
+```
+
+```{r}
+df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(active_years = unique(active_years),
+            n_papers = length(unique(pub_id))) %>% 
+  group_by(active_years) %>% 
+  summarise(n_papers=mean(n_papers))
+```
+
+```{r}
+df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(LR_main_field = unique(LR_main_field),
+            n_papers = length(unique(pub_id))) %>% 
+  group_by(LR_main_field) %>% 
+  summarise(n_papers=mean(n_papers))
+```
+## Topics
+
+```{r}
+df_authors <- df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(first_year = unique(first_year),
+            active_years = unique(active_years),
+            country_code = unique(country_code),
+            mobile = length(unique(country_code))>1,
+            n_papers = length(unique(pub_id)),
+            n_LR_main_field = length(unique(LR_main_field)),
+            ntopics = length(unique(cluster_id1)))
+```
+
+
+```{r}
+df_authors
+```
+Mobile researchers
+
+```{r}
+prop_mobile <- df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(mobile = length(unique(country_code))>1) %>% 
+  pull(mobile) %>% table()
+
+prop_mobile/sum(prop_mobile)
+```
+
+__doubt__ why we have 45% of authors with more than one country?
+
+```{r}
+df_authors %>% 
+  group_by(n_papers) %>% 
+  summarise(n_authors = n(),
+            prop_mobile = mean(mobile),
+            avg_n_fields =mean(n_LR_main_field/n_papers),
+            avg_n_topics =mean(ntopics/n_papers))
+```
+
+
+```{r}
+df_authors %>% 
+  group_by(n_papers) %>% 
+  summarise(n_authors = n(),
+            avg_field_per_paper =mean(n_LR_main_field/n_papers),
+            avg_topics_per_paper =mean(ntopics/n_papers)) %>% 
+  ggplot(aes(n_papers, avg_topics_per_paper, fill = n_authors))+
+  geom_col()
+```
+
+Authors with more papers are also more focused on their topics. For auhtors with more than 50 papers 0.25 means that they work on a new topic every 4 papers. While for authors with ~ 10 papers 0.5 means that they work on a new topic every 2 papers
+
+## countries
+
+```{r}
+large_countries <- table(df_authors$country_code)[table(df_authors$country_code)>1000]%>% names
+```
+
+
+```{r}
+df_authors %>% 
+  filter(country_code %in% c('AR','CA','CH','ES','GB','JP','ZA','US')) %>% 
+  group_by(n_papers,country_code) %>% 
+  summarise(n_authors = n(),
+            avg_field_per_paper =mean(n_LR_main_field/n_papers),
+            avg_topics_per_paper =mean(ntopics/n_papers)) %>% 
+  ggplot(aes(n_papers, avg_topics_per_paper, fill = n_authors))+
+  geom_col()+
+  facet_wrap(country_code~.)
+```
+Seems to be stable across countries. Taking authors with more than 10 papers might give us a more stable group
+
+```{r fig.width=10}
+
+df_authors %>% 
+  filter(country_code %in% large_countries,
+         n_papers>10) %>% 
+  group_by(country_code) %>% 
+  summarise(n_authors = n(),
+            avg_field_per_paper =mean(n_LR_main_field/n_papers),
+            avg_topics_per_paper =mean(ntopics/n_papers)) %>% 
+  mutate(country_code = fct_reorder(country_code,avg_topics_per_paper)) %>% 
+  ggplot(aes(country_code, avg_topics_per_paper, fill = country_code))+
+  geom_col()+
+  theme(legend.position = 'none')
+```
+
+## authorship
+
+```{r}
+single_papers <- df %>% 
+  group_by(pub_id) %>% 
+  summarise(author_seq = max(author_seq)) %>% 
+  filter(author_seq==1)
+```
+
+
+```{r}
+single_authors <- df %>% 
+  filter(pub_id%in% single_papers$pub_id) %>% 
+  group_by(Researcher_id) %>% 
+  summarise(first_year = unique(first_year),
+            active_years = unique(active_years),
+            country_code = unique(country_code),
+            n_papers = length(unique(pub_id)),
+            n_LR_main_field = length(unique(LR_main_field)),
+            ntopics = length(unique(cluster_id1))) %>% 
+  mutate(authorship= 'single authors')
+
+corr_authors <- df %>% 
+  filter(!pub_id%in% single_papers$pub_id, is_corresponding_author==1) %>% 
+  group_by(Researcher_id) %>% 
+  summarise(first_year = unique(first_year),
+            active_years = unique(active_years),
+            country_code = unique(country_code),
+            n_papers = length(unique(pub_id)),
+            n_LR_main_field = length(unique(LR_main_field)),
+            ntopics = length(unique(cluster_id1))) %>% 
+  mutate(authorship= 'corresponding authors')
+
+non_corr_authors <- df %>% 
+  filter(!pub_id%in% single_papers$pub_id, is_corresponding_author==0) %>% 
+  group_by(Researcher_id) %>% 
+  summarise(first_year = unique(first_year),
+            active_years = unique(active_years),
+            country_code = unique(country_code),
+            n_papers = length(unique(pub_id)),
+            n_LR_main_field = length(unique(LR_main_field)),
+            ntopics = length(unique(cluster_id1))) %>% 
+  mutate(authorship= 'non corresponding authors')
+```
+
+
+
+```{r}
+bind_rows(list(single_authors,corr_authors,non_corr_authors)) %>% 
+  group_by(authorship) %>% 
+  summarise(n_authors = n(),
+            avg_field_per_paper =mean(n_LR_main_field/n_papers),
+            avg_topics_per_paper =mean(ntopics/n_papers)) %>% 
+  ggplot(aes(authorship, avg_topics_per_paper, fill = authorship))+
+  geom_col()
+```
+
+## Mobility
+
+```{r}
+df_authors %>% 
+  group_by(mobile) %>% 
+  summarise(n_authors = n(),
+            avg_field_per_paper =mean(n_LR_main_field/n_papers),
+            avg_topics_per_paper =mean(ntopics/n_papers)) %>% 
+  ggplot(aes(mobile, avg_topics_per_paper, fill = mobile))+
+  geom_col()
+```
+
+Mobile researchers are more focused on their topics

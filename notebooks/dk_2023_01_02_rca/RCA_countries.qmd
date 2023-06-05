@@ -1,0 +1,144 @@
+---
+title: "RCA_countries"
+author: "Diego Kozlowski"
+format: html
+editor: visual
+---
+
+# Relative Comparative Advantages of countries in topics
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+```{r}
+#| warning: false
+pubs <- read_delim("../../data/pubs.txt", delim = "\t", 
+    escape_double = FALSE, trim_ws = TRUE)
+df1 <- read_csv("../../data/df1.txt") %>% select(-...1) %>% distinct()
+proof_concept_map <- read_delim("../../data/maps/proof_concept_map.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+researchers <- read_delim("../../data/researchers.txt", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+```
+
+$$
+RCA = \frac{P(cluster_i/country)}{P(cluster_i)}
+$$
+
+$$
+RCA_i = \frac{\frac{\#cluster_i^c}{\sum_j \#cluster_j^c}}{\frac{\#cluster_i}{\sum_j \#cluster_j}}
+$$
+
+```{r}
+df_topics <- 
+  proof_concept_map %>% 
+  select(id, sublabel, starts_with('weight'),starts_with('score')) %>%
+  rename_all(~stringr::str_replace(.,"^(score|weight)","")) %>%
+  clean_names() %>% 
+    rename(all_total_researchers =total_researchers, all_pubs_abroad=pubs_abroad, all_pubs_home=pubs_home) %>% 
+    pivot_longer(starts_with(c("ar",'nl','es','za')), names_pattern = "(ar|nl|es|za)_(.*)",names_to = c('country','.value'))    
+```
+
+Relative Comparative Advantages are the ratio between the proportion of papers in a cluster in a country over the proportion of papers in that country on all countries.
+
+## Note: To compute the real RCA, we should use the full database, and not the selection of countries.
+
+```{r}
+topics_prop_global = df_topics %>% 
+  select(id, sublabel,no_of_pub_2007_2021) %>% 
+  distinct() %>% 
+  mutate(p_global = no_of_pub_2007_2021/sum(no_of_pub_2007_2021)) %>% 
+  select(id,p_global)
+
+topics_prop_country <- df_topics %>% 
+  mutate(pubs_abroad = replace_na(pubs_abroad,0),
+         pubs_home = replace_na(pubs_home,0),
+         country_publications = pubs_abroad+pubs_home) %>% 
+  group_by(country) %>% 
+  mutate(p_country = country_publications/sum(country_publications))
+
+rca_topics_countries <- topics_prop_country %>% 
+  left_join(topics_prop_global, by = c("id")) %>% 
+  mutate(RCA = p_country/p_global) %>% 
+  select(country,id, sublabel,RCA) %>% 
+  arrange(id) %>% 
+  mutate(country = toupper(country))
+ 
+```
+
+```{r}
+df_researchers <- df1 %>% 
+  mutate(mobility = case_when(total_abroad>0 ~'mobile', 
+                              TRUE ~'non_mobile'))
+```
+
+```{r}
+df_researchers %>% 
+  group_by(mobility) %>% 
+  count() %>% 
+  ungroup() %>% 
+  mutate(p=scales::percent(n/sum(n)))
+```
+
+is this right? 20% of researchers are mobile?
+
+```{r}
+df <- pubs %>% 
+  left_join(df_researchers %>% select(researcher_id,mobility), by = "researcher_id") %>% 
+  left_join(researchers %>% select(researcher_id,country_code_origin), by = 'researcher_id') %>% 
+  left_join(rca_topics_countries, by = c('country_code_origin'='country', 'cluster_id1'='id'))
+```
+
+```{r}
+df %>% 
+  group_by(mobility) %>% 
+  summarise(mean_rca = mean(RCA,na.rm = TRUE))
+```
+
+```{r}
+df %>% 
+  filter(mobility=='mobile') %>%
+  group_by(foreign_country) %>% 
+  summarise(mean_rca = mean(RCA,na.rm = TRUE))
+```
+
+1.  Mobile authors seem to be more specialized in the topics of their country of origin than non-mobile authors (unexpected),
+2.  But they are more specialized when they are publishing from home, than when they publish on a foreign country (expected).
+
+```{r}
+df %>% 
+  group_by(country_code_origin, mobility) %>% 
+  summarise(mean_rca = mean(RCA,na.rm = TRUE))
+
+```
+
+```{r}
+df %>% 
+  filter(mobility=='mobile') %>%
+  group_by(country_code_origin, foreign_country) %>% 
+  summarise(mean_rca = mean(RCA,na.rm = TRUE))
+```
+
+-   Results reproduce for each country, on different levels of specificity (AR\>ZA\>ES\>NL) (expected).
+
+```{r}
+df %>% 
+  group_by(country_code_origin, mobility,pub_year) %>% 
+  summarise(mean_rca = mean(RCA,na.rm = TRUE)) %>% 
+  ggplot(aes(pub_year,mean_rca, color=mobility))+
+  geom_line()+
+  facet_wrap(.~country_code_origin)
+```
+
+```{r}
+df %>% 
+  group_by(country_code_origin, foreign_country,pub_year) %>% 
+  summarise(mean_rca = mean(RCA,na.rm = TRUE)) %>% 
+  ggplot(aes(pub_year,mean_rca, color=factor(foreign_country)))+
+  geom_line()+
+  facet_wrap(.~country_code_origin)
+```
