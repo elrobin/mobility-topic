@@ -1,12 +1,23 @@
 library(tidyverse)
 library(rvest)
+library(countrycode)
 
-content <- read_html("https://www.iban.com/country-codes")
-tables <- content %>% html_table(fill = TRUE)
+names_wos <- read_excel('data/country_portfolios_WOS.xlsx') %>% 
+  group_by(eregroupement) %>% 
+  summarise(Country=unique(eregroupement))
 
-table <- tables[[1]]
+    
+names_wos <- names_wos %>% 
+  mutate(iso2c = countrycode(Country,origin = 'country.name.en', destination = 'iso2c'),
+         iso2c = case_match(Country,
+                             'Kosovo' ~'XK',
+                             'Yugoslavia' ~ 'YU',
+                             .default = iso2c)) 
 
-table %>% 
-  rename(iso2c = 'Alpha-2 code', iso3c = 'Alpha-3 code') %>% 
-  select(-Numeric) %>% 
-  write_csv('data/country_code.csv')
+names_wos  %>% 
+  select(-Country) %>% 
+  write_csv('data/country_codes.csv')
+  
+  
+  
+  

@@ -1,6 +1,6 @@
 
 
-```{r}
+
 country_origin_simple <-
   df %>% 
   filter(first_year==pub_year) %>% 
@@ -34,51 +34,51 @@ country_origin_2 <-
   select(Researcher_id, country_origin = country_code)
 
 country_origin <- bind_rows(country_origin_simple,country_origin_2)
-```
 
 
-```{r}
+
+
 df <- df %>% 
   left_join(country_origin) %>% 
   filter(!is.na(country_origin)) %>%
   mutate(country_code = factor(country_code),
          cluster_id1 = factor(cluster_id1))
-```
 
-```{r}
+
+
 df2 <- df %>% 
   group_by(pub_id) %>% 
   mutate(w_migrant = any(country_origin != country_code),
          int_collab =  length(unique(country_code))>1)
-```
 
 
-1. research profile of papers without migrants and without international collaborations
 
-```{r}
+# 1. research profile of papers without migrants and without international collaborations
+
+
 domestic_TP <- df %>% 
   filter(country_code==country_origin) %>% 
   group_by(country_code,cluster_id1) %>% 
   count() %>% 
   ungroup() %>% 
   complete(country_code,cluster_id1,fill=list(n=0))
-```
 
-2.research profile of papers with migrant authors (including those with international collaborations)
 
-```{r}
+# 2.research profile of papers with migrant authors (including those with international collaborations)
+
+
 migrants_TP <- df %>% 
   filter(country_code!=country_origin) %>% 
   group_by(country_code,cluster_id1) %>% 
   count() %>% 
   ungroup() %>% 
   complete(country_code,cluster_id1,fill=list(n=0))
-```
 
 
-3. topical profile of papers with international collaborations and without migrants
 
-```{r}
+# 3. topical profile of papers with international collaborations and without migrants
+
+
 int_collab_df <- df %>% 
   group_by(pub_id) %>% 
   mutate(involved_countries = length(unique(country_code)))
@@ -89,16 +89,16 @@ int_collab_TP <- int_collab_df %>%
   count() %>% 
   ungroup() %>% 
   complete(country_code,cluster_id1,fill=list(n=0))
-```
+
 
 
 ## Cosine similarity
 
-between the three topical profiles of each country.
+# between the three topical profiles of each country.
 
-result should look like a matrix of 4x4 per country
+# result should look like a matrix of 4x4 per country
 
-```{r}
+
 # cos_country <- country_topical_profile %>% 
 #  # select(-cluster_id1) %>% 
 #   pivot_wider(names_from = cluster_id1, values_from = n) %>% 
@@ -107,4 +107,4 @@ result should look like a matrix of 4x4 per country
 #   cosine(.)
 
 
-```
+

@@ -1,0 +1,19 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r setup}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+source('utils.R')
+```
+
+
+```{r}
+plot_data(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs',distance_formula = 'cosine', plotly = TRUE)
+plot_data(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs',distance_formula = 'kullback-leibler', plotly = TRUE)
+plot_data(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',distance_formula = 'cosine', plotly = TRUE)
+plot_data(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',distance_formula = 'kullback-leibler', plotly = TRUE)
+```
