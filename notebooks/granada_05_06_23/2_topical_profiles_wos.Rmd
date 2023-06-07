@@ -1,0 +1,200 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r setup}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
+library(lsa)
+library(readxl)
+library(plotly)
+```
+
+
+```{r}
+df <- read_excel('../../data/country_portfolios_WOS.xlsx')
+```
+
+```{r}
+countries_keep <- df %>% group_by(eregroupement) %>% 
+  summarise(N=sum(N)) %>% 
+  filter(N>1000) %>% 
+  pull(eregroupement)
+
+df <- df %>% 
+  filter(eregroupement %in% countries_keep)
+```
+
+```{r}
+df_clean <- df %>% 
+  select(-Ediscipline) %>% 
+  group_by(Type,Especialite,eregroupement) %>% 
+  summarise(N = sum(N)) %>% 
+  ungroup() %>% 
+  mutate(Especialite = factor(Especialite),
+         eregroupement = factor(eregroupement)) %>% 
+     complete(Type,Especialite,eregroupement,fill=list(N=0))
+
+#filter empty topics
+
+empty_topics <- df_clean %>% 
+  group_by(Especialite,eregroupement) %>% 
+  summarise(N= sum(N)) %>% 
+  filter(N==0)
+
+df_clean2 <- df_clean %>% 
+  anti_join(empty_topics)
+```
+
+```{r}
+df_clean <- df_clean %>% 
+  group_by(Type,eregroupement) %>% 
+  reframe(Especialite,
+          N,
+          p = N/sum(N))
+
+df_clean2 <- df_clean2 %>% 
+  group_by(Type,eregroupement) %>% 
+  reframe(Especialite,
+          N,
+          p = N/sum(N))
+```
+
+
+```{r}
+cossims <- function(df){
+  df %>% 
+  select(-eregroupement,-N) %>% 
+  pivot_wider(names_from = Type,values_from = p) %>% 
+  summarise(cos_IM = cosine(International,Mobile),
+            cos_IN = cosine(International,National),
+            cos_MN = cosine(Mobile,National))
+}
+```
+
+
+```{r}
+cosine_sim <- df_clean %>% 
+  group_by(eregroupement) %>% 
+  cossims()
+```
+
+## size versus change
+
+```{r, fig.height=12, fig.width=12}
+ggplotly(
+df %>% group_by(eregroupement) %>% 
+  summarise(N=sum(N)) %>% 
+  right_join(cosine_sim) %>% 
+  pivot_longer(cols = cos_IM:cos_MN,names_to = 'relation',values_to = 'cosine',names_prefix = 'cos_') %>% 
+  mutate(relation = case_when(relation=='IM' ~'International-Mobile',
+                              relation=='IN' ~'International-National',
+                              relation=='MN' ~'Mobile-National',
+                              )) %>% 
+  filter(eregroupement!='ZZALL') %>% 
+  ggplot(aes(N, cosine, color=relation, label=eregroupement)) +
+  geom_point()+
+  scale_x_log10()
+)
+```
+
+## Try to normalize size
+## compare all papers vs all papers minus (international/Mobile/National)
+
+
+```{r}
+cossims_diff <- function(df){
+  df %>%
+  select(-eregroupement,-p) %>% 
+  pivot_wider(id_cols = c(eregroupement,Especialite),names_from = Type,values_from = N) %>% 
+  mutate(All = International + Mobile + National,
+         International = All - International,
+         Mobile = All - Mobile,
+         National = All - National) %>% 
+  mutate(International = International/sum(International),
+         Mobile = Mobile/sum(Mobile),
+         National = National/sum(National)) %>% 
+  summarise(International = cosine(International,All),
+            National = cosine(National,All),
+            Mobile = cosine(Mobile,All))
+}
+```
+
+```{r}
+cosine_sim_diff <- df_clean %>% 
+  group_by(eregroupement) %>% 
+  cossims_diff()
+```
+
+```{r}
+ggplotly(
+df %>% group_by(eregroupement) %>% 
+  summarise(N=sum(N)) %>% 
+  right_join(cosine_sim_diff) %>% 
+  pivot_longer(cols = International:Mobile,names_to = 'relation',values_to = 'cosine') %>% 
+  filter(eregroupement!='ZZALL') %>% 
+  ggplot(aes(N, cosine, color=relation, label=eregroupement)) +
+  geom_point()+
+  scale_x_log10()
+)
+```
+
+
+## group sizes
+
+```{r}
+ggplotly(
+df %>% group_by(eregroupement, Type) %>% 
+  summarise(N=sum(N)) %>% 
+  right_join(cosine_sim_diff %>% pivot_longer(International:Mobile, names_to='Type', values_to='cosine')) %>% 
+  # pivot_longer(cols = International:Mobile,names_to = 'relation',values_to = 'cosine') %>% 
+  filter(eregroupement!='ZZALL') %>% 
+  group_by(eregroupement) %>% 
+  mutate(country_N = sum(N)) %>% 
+  ggplot(aes(country_N, cosine, color=Type,size=N, label=eregroupement)) +
+  geom_point()+
+  scale_x_log10()
+)
+
+```
+```{r}
+cosine_sim_diff <- df_clean %>% 
+  group_by(eregroupement) %>% 
+  cossims_diff()
+cosine_sim_diff2 <- df_clean2 %>% 
+  group_by(eregroupement) %>% 
+  cossims_diff()
+
+cosine_sim_diff %>% select(-eregroupement)-
+cosine_sim_diff2 %>% select(-eregroupement)
+
+```
+
+
+```{r}
+
+cosine_sim_diff2 <- df_clean2 %>% 
+  group_by(eregroupement) %>% 
+  cossims_diff()
+
+ggplotly(
+df %>% group_by(eregroupement, Type) %>% 
+  summarise(N=sum(N)) %>% 
+  right_join(cosine_sim_diff2 %>% pivot_longer(International:Mobile, names_to='Type', values_to='cosine')) %>% 
+  # pivot_longer(cols = International:Mobile,names_to = 'relation',values_to = 'cosine') %>% 
+  filter(eregroupement!='ZZALL') %>% 
+  group_by(eregroupement) %>% 
+  mutate(country_N = sum(N)) %>% 
+  ggplot(aes(country_N, cosine, color=Type,size=N, label=eregroupement)) +
+  geom_point()+
+  scale_x_log10()
+)
+
+```
+
+
+
+
+X-axis with the gini of the concentration of topics

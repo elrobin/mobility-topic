@@ -1,0 +1,19 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(countrycode)
+```
+
+
+```{r}
+df_wos <- read_excel('../../data/country_portfolios_WOS.xlsx')
+df_dim <- read_delim('../../data/country_portfolios_dimensions.csv',delim = ';')
+
+
+countrycode::codelist_panel$iso
+iso3166
+```
