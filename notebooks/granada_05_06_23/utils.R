@@ -14,7 +14,7 @@ df_dim <- read_delim('../../data/country_portfolios_dimensions.csv',delim = ';')
                            'national' ~ 'National',
                            'international' ~ 'International',
                            'migrant' ~ 'Mobile'),
-         country_code =countrycode(country_code, origin = 'iso2c', destination = 'country.name')
+         country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name')
   )  
 
 df_wos <- read_excel('../../data/country_portfolios_WOS.xlsx') %>%
@@ -72,24 +72,42 @@ dist_pairs <- function(df,dist_method='kullback-leibler'){
               Mobile_National = distance(rbind(Mobile,National),method=dist_method))
 }
 
+# dist_diff <- function(df,dist_method='kullback-leibler'){
+#   df %>%
+#     select(-country_code,-p) %>% 
+#     pivot_wider(id_cols = c(country_code,field),names_from = type,values_from = N) %>% 
+#     mutate(All = International + Mobile + National,
+#            International = All - International,
+#            Mobile = All - Mobile,
+#            National = All - National) %>% 
+#     mutate(International = International/sum(International),
+#            Mobile = Mobile/sum(Mobile),
+#            National = National/sum(National),
+#            All = All/sum(All)) %>% 
+#     summarise(International = distance(rbind(International,All),method=dist_method),
+#               National = distance(rbind(National,All),method=dist_method),
+#               Mobile = distance(rbind(Mobile,All),method=dist_method))
+# }
+
 dist_diff <- function(df,dist_method='kullback-leibler'){
   df %>%
-    select(-country_code,-p) %>% 
-    pivot_wider(id_cols = c(country_code,field),names_from = type,values_from = N) %>% 
+    select(-country_code,-p) %>%
+    pivot_wider(id_cols = c(country_code,field),names_from = type,values_from = N) %>%
     mutate(All = International + Mobile + National,
-           International = All - International,
-           Mobile = All - Mobile,
-           National = All - National) %>% 
+           c_International = All - International,
+           c_Mobile = All - Mobile,
+           c_National = All - National) %>%
     mutate(International = International/sum(International),
            Mobile = Mobile/sum(Mobile),
            National = National/sum(National),
-           All = All/sum(All)) %>% 
-    summarise(International = distance(rbind(International,All),method=dist_method),
-              National = distance(rbind(National,All),method=dist_method),
-              Mobile = distance(rbind(Mobile,All),method=dist_method))
+           c_International = c_International/sum(c_International),
+           c_Mobile = c_Mobile/sum(c_Mobile),
+           c_National = c_National/sum(c_National)
+           ) %>%
+    summarise(International = distance(rbind(International,c_International),method=dist_method),
+              National = distance(rbind(National,c_National),method=dist_method),
+              Mobile = distance(rbind(Mobile,c_Mobile),method=dist_method))
 }
-
-
 
 compute_distance <- function(df, distance_formula){
   df %>% 
@@ -131,14 +149,70 @@ build_dataset <- function(df,t=1000,f_empty_topics=TRUE, comparison_group='diff'
   df
 }
 
-plot_data <- function(df,t,f_empty_topics=TRUE, comparison_group='pairs',
-                      distance_formula="kullback-leibler",plotly=FALSE){
-  g <- build_dataset(df,t,f_empty_topics = f_empty_topics, comparison_group=comparison_group,
-                     distance_formula=distance_formula) %>% 
-    ggplot(aes(country_N, distance, color=type, label=country_code)) +
+# plot_data(df_dim,t = 5000,f_empty_topics = TRUE,
+#           comparison_group = 'diff',distance_formula = 'cosine', plotly = TRUE,
+#           regions=TRUE)
+#plot_data(df_wos,t = 1000,distance_formula = kl_diff, plotly = TRUE)
+
+## proportion of type respect to distance
+
+summarise_data2 <- function(df){
+  df %>% 
+    group_by(country_code,type) %>% 
+    summarise(N_type = sum(N)) %>% 
+    group_by(country_code) %>% 
+    reframe(type,
+            p_type = N_type/sum(N_type))
+}
+
+
+build_dataset2 <- function(df,t=1000,f_empty_topics=TRUE, #comparison_group='diff',
+                          distance_formula="kullback-leibler"){
+  
+  tot_n <- total_by_country(df)
+  prop_type <-  summarise_data2(df)
+  df <- df %>% 
+    filter_countries(tr=t) %>% 
+    complete_data()
+  
+  if (f_empty_topics) {
+    df <- df %>% filter_empty_topics()
+  }
+  df <- df %>% 
+    summarise_data() %>% 
+    group_by(country_code) 
+  
+  # if (comparison_group=='pairs') {
+  #   df <- dist_pairs(df,dist_method = distance_formula)
+  # }else{
+  # }
+    df <- dist_diff(df,dist_method = distance_formula) %>% 
+    pivot_longer(cols = -country_code, names_to = 'type', values_to = 'distance') %>% 
+      left_join(prop_type) %>% 
+    left_join(tot_n)
+  df
+}
+
+plot_distance_N <- function(df,t,f_empty_topics=TRUE, comparison_group='pairs',
+                      distance_formula="kullback-leibler",plotly=FALSE,regions=TRUE){
+  
+  gdata <- build_dataset(df,t,f_empty_topics = f_empty_topics, comparison_group=comparison_group,
+                         distance_formula=distance_formula) %>% 
+    mutate(region = countrycode(country_code, origin = 'country.name', destination = "un.region.name"))
+  
+  if (regions) {
+    gdata <- gdata %>% 
+      filter(region!='NA')
+  }
+  
+  g <- gdata %>% ggplot(aes(country_N, distance, color=type, label=country_code)) +
     geom_point()+
     labs(title = paste("comparison_group:",comparison_group,'-','distance_formula:',distance_formula))+
     scale_x_log10()
+  
+  if (regions) {
+    g <- g + facet_wrap(.~region)
+  }
   
   if (plotly) {
     ggplotly(g)
@@ -147,7 +221,33 @@ plot_data <- function(df,t,f_empty_topics=TRUE, comparison_group='pairs',
   }
 }
 
-plot_data(df_dim,t = 5000,f_empty_topics = TRUE,
-          comparison_group = 'diff',distance_formula = 'cosine', plotly = TRUE)
-#plot_data(df_wos,t = 1000,distance_formula = kl_diff, plotly = TRUE)
 
+plot_distance_prop <- function(df,t=5000,f_empty_topics=TRUE, #comparison_group='pairs',
+                            distance_formula="cosine",plotly=FALSE,regions=TRUE){
+  
+  gdata <- build_dataset2(df,t,f_empty_topics = f_empty_topics, distance_formula=distance_formula) %>% 
+    mutate(region = countrycode(country_code, origin = 'country.name', destination = "un.region.name"))
+  
+  if (regions) {
+    gdata <- gdata %>% 
+      filter(region!='NA')
+  }
+  
+  g <- gdata %>% ggplot(aes(p_type, distance, color=type, label=country_code)) +
+    geom_point()+
+    labs(title = paste('distance_formula:',distance_formula))+
+    lims(x=c(0,0.8))
+
+  
+  if (regions) {
+    g <- g + facet_wrap(type~region)
+  }else{
+    g <- g + facet_grid(.~type)
+  }
+  
+  if (plotly) {
+    ggplotly(g)
+  }else{
+    g
+  }
+}

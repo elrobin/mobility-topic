@@ -108,3 +108,21 @@ int_collab_TP <- int_collab_df %>%
 
 
 
+
+plot_distance_N <- function(df,t=5000,f_empty_topics=TRUE, comparison_group='pairs',
+                            distance_formula="kullback-leibler",plotly=FALSE){
+  g <- build_dataset(df,t,f_empty_topics = f_empty_topics, comparison_group=comparison_group,
+                     distance_formula=distance_formula) %>% 
+    ggplot(aes(country_N, distance, color=type, label=country_code)) +
+    geom_point()+
+    labs(title = paste("comparison_group:",comparison_group,'-','distance_formula:',distance_formula))+
+    scale_x_log10()
+  
+  if (plotly) {
+    ggplotly(g)
+  }else{
+    g
+  }
+}
+
+
