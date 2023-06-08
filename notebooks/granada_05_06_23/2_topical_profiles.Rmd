@@ -21,6 +21,6 @@ plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',
 
 ```{r}
 plot_distance_prop(df_dim,t = 5000,f_empty_topics = TRUE,distance_formula = 'kullback-leibler', plotly = TRUE,
-                   regions = FALSE)
+                   regions = F)
 ```
 

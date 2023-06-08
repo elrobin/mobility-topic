@@ -6,24 +6,24 @@ library(countrycode)
 library(philentropy)
 
 df_dim <- read_delim('../../data/country_portfolios_dimensions.csv',delim = ';') %>%
-# df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>% 
+# df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
   rename(N=p, 
          field = for_group_id) %>% 
   filter(type !='all') %>% #!country_code %in% c('ZZALL','Unknown')
   mutate(type = case_match(type,
                            'national' ~ 'National',
                            'international' ~ 'International',
-                           'migrant' ~ 'Mobile'),
+                           'migrant' ~ 'Immigrant',
+                           'abroad' ~ 'Emigrant'),
          country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name')
   )  
 
-df_wos <- read_excel('../../data/country_portfolios_WOS.xlsx') %>%
-# df_wos <- read_excel('data/country_portfolios_WOS.xlsx') %>% 
-  rename(country_code=eregroupement,
-         field = Especialite,
-         type=Type)
+# df_wos <- read_excel('../../data/country_portfolios_WOS.xlsx') %>%
+# # df_wos <- read_excel('data/country_portfolios_WOS.xlsx') %>% 
+#   rename(country_code=eregroupement,
+#          field = Especialite,
+#          type=Type)
   
-
 filter_countries <- function(df,tr=1000){
   countries_keep <- df %>% group_by(country_code) %>% 
     summarise(N=sum(N)) %>% 
@@ -67,46 +67,54 @@ dist_pairs <- function(df,dist_method='kullback-leibler'){
   df %>% 
     select(-country_code,-N) %>% 
     pivot_wider(names_from = type,values_from = p) %>% 
-    summarise(International_Mobile = distance(rbind(International,Mobile),method=dist_method),
+    summarise(International_Immigrant = distance(rbind(International,Immigrant),method=dist_method),
               International_National = distance(rbind(International,National),method=dist_method),
-              Mobile_National = distance(rbind(Mobile,National),method=dist_method))
+              Immigrant_National = distance(rbind(Immigrant,National),method=dist_method),
+              Emigrant_Immigrant = distance(rbind(Emigrant,Immigrant),method=dist_method),
+              Emigrant_National= distance(rbind(Emigrant,National),method=dist_method),
+              Emigrant_International= distance(rbind(Emigrant,International),method=dist_method))
 }
 
 # dist_diff <- function(df,dist_method='kullback-leibler'){
 #   df %>%
 #     select(-country_code,-p) %>% 
 #     pivot_wider(id_cols = c(country_code,field),names_from = type,values_from = N) %>% 
-#     mutate(All = International + Mobile + National,
+#     mutate(All = International + Immigrant + National,
 #            International = All - International,
-#            Mobile = All - Mobile,
+#            Immigrant = All - Immigrant,
 #            National = All - National) %>% 
 #     mutate(International = International/sum(International),
-#            Mobile = Mobile/sum(Mobile),
+#            Immigrant = Immigrant/sum(Immigrant),
 #            National = National/sum(National),
 #            All = All/sum(All)) %>% 
 #     summarise(International = distance(rbind(International,All),method=dist_method),
 #               National = distance(rbind(National,All),method=dist_method),
-#               Mobile = distance(rbind(Mobile,All),method=dist_method))
+#               Immigrant = distance(rbind(Immigrant,All),method=dist_method))
 # }
 
 dist_diff <- function(df,dist_method='kullback-leibler'){
   df %>%
     select(-country_code,-p) %>%
     pivot_wider(id_cols = c(country_code,field),names_from = type,values_from = N) %>%
-    mutate(All = International + Mobile + National,
+    mutate(All = International + Immigrant + National,
            c_International = All - International,
-           c_Mobile = All - Mobile,
-           c_National = All - National) %>%
+           c_Immigrant = All - Immigrant,
+           c_National = All - National,
+           c_Emigrant = All - Emigrant) %>%
     mutate(International = International/sum(International),
-           Mobile = Mobile/sum(Mobile),
+           Immigrant = Immigrant/sum(Immigrant),
            National = National/sum(National),
+           Emigrant = Emigrant/sum(Emigrant),
            c_International = c_International/sum(c_International),
-           c_Mobile = c_Mobile/sum(c_Mobile),
-           c_National = c_National/sum(c_National)
+           c_Immigrant = c_Immigrant/sum(c_Immigrant),
+           c_National = c_National/sum(c_National),
+           c_Emigrant = c_Emigrant/sum(c_Emigrant),
            ) %>%
     summarise(International = distance(rbind(International,c_International),method=dist_method),
               National = distance(rbind(National,c_National),method=dist_method),
-              Mobile = distance(rbind(Mobile,c_Mobile),method=dist_method))
+              Immigrant = distance(rbind(Immigrant,c_Immigrant),method=dist_method),
+              Emigrant = distance(rbind(Emigrant,c_Emigrant),method=dist_method),
+              )
 }
 
 compute_distance <- function(df, distance_formula){
@@ -226,14 +234,15 @@ plot_distance_prop <- function(df,t=5000,f_empty_topics=TRUE, #comparison_group=
                             distance_formula="cosine",plotly=FALSE,regions=TRUE){
   
   gdata <- build_dataset2(df,t,f_empty_topics = f_empty_topics, distance_formula=distance_formula) %>% 
-    mutate(region = countrycode(country_code, origin = 'country.name', destination = "un.region.name"))
+    mutate(region = countrycode(country_code, origin = 'country.name', destination = "un.region.name")) %>% 
+    filter(Type!='Emmigrant') #The comparison of the size of the emmigrant group w.r.t. their country of origin is not informative 
   
   if (regions) {
     gdata <- gdata %>% 
       filter(region!='NA')
   }
   
-  g <- gdata %>% ggplot(aes(p_type, distance, color=type, label=country_code)) +
+  g <- gdata %>% ggplot(aes(p_type, distance, color=region, label=country_code)) +
     geom_point()+
     labs(title = paste('distance_formula:',distance_formula))+
     lims(x=c(0,0.8))

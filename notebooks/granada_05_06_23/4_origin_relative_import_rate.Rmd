@@ -1,0 +1,21 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+definitions:
+
+
+1. Country of reception-based normalization
+
+of all papers in the country of reception that are from migrant authors from a country X, the percentage that are in a given field.
+
+
+i: country of reception
+j: country of origin
+f: field
+$$
+\frac{\frac{\#_{i,f}^{j}}{\#_{i}^{j}}}{\frac{\#_{f}^{j}}{\#^{j}}}
+$$
