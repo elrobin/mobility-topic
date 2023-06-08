@@ -22,10 +22,19 @@ df_authors <- df %>%
             n_main_field = length(unique(LR_main_field)),
             n_topics = length(unique(cluster_id1)))
 
+# compute variables to isolate first and last publication years
+df_authors$first_pub_year <- strsplit(df_authors$pub_year, split = "-", fixed = TRUE)
+df_authors$first_pub_year <- lapply(df_authors$first_pub_year, as.numeric)
+df_authors$first_pub_year <- lapply(df_authors$first_pub_year, min)
+
+df_authors$last_pub_year <- strsplit(df_authors$pub_year, split = "-", fixed = TRUE)
+df_authors$last_pub_year <- lapply(df_authors$last_pub_year, as.numeric)
+df_authors$last_pub_year <- lapply(df_authors$last_pub_year, max)
+
 # compute variable to identify gaps within publication years
-df_authors$pub_year2 <- strsplit(df_authors$pub_year, split = "-", fixed = TRUE)
-df_authors$pub_year2 <- lapply(df_authors$pub_year2, as.numeric)
-df_authors$pub_year_gap <- lapply(df_authors$pub_year2, function(years) any(diff(years) > 1))
+df_authors$pub_year_gap <- strsplit(df_authors$pub_year, split = "-", fixed = TRUE)
+df_authors$pub_year_gap <- lapply(df_authors$pub_year_gap, as.numeric)
+df_authors$pub_year_gap <- lapply(df_authors$pub_year_gap, function(years) any(diff(years) > 1))
 
 # compute variable to identify mobile and non-mobile researchers
 df_authors$is_mobile <- grepl("-", df_authors$country_code)
@@ -74,3 +83,12 @@ df_topics$pp_topic <- df_topics$n_pub / 7280077
 df_fields <- df %>%
   group_by (LR_main_field, career_stage) %>%
   summarise(n_researchers = length(unique(Researcher_id)))
+
+#############################################################################################
+
+ggplot(df_fields, aes(x = LR_main_field, y = n_researchers, fill = career_stage, color = career_stage)) +
+  geom_boxplot() +
+  theme_minimal() +
+  ggtitle("Distribution of main fields by number of researchers working on them at different career stages") +
+  xlab("Main fields") +
+  ylab("Researchers count")
