@@ -1,5 +1,6 @@
 library(wesanderson)
 library(ISOcodes)
+library(ggpubr)
 source("notebooks/dk_figures/utils.R")
 
 df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
@@ -22,73 +23,15 @@ theme_plot <- function(g){
   theme(legend.position = 'bottom')
 }
 
-plot_distance_N(df = df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs',
-                distance_formula = 'cosine', plotly = FALSE,regions = FALSE,val = 'p')  %>% 
-  theme_plot()
+## we cannot use RCA and KL distance, because RCA is not a probability dist, and KL is a distance betweeen probs.
 
-ggsave('results/figures/N_distance_cosine_pairs.png')
-
-plot_distance_N(df = df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs',
-                distance_formula = 'cosine', plotly = FALSE,regions = FALSE,val = 'rca')  %>% 
-  theme_plot()
-
-ggsave('results/figures/N_distance_cosine_pairs_rca.png')
-
-plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs', 
-                distance_formula = 'kullback-leibler', plotly = FALSE,regions = FALSE,
-                val = 'p')  %>% 
-  theme_plot()
-
-ggsave('results/figures/N_distance_KL_pairs.png')
-
-# plot_distance_N(df_dim,t = 500,f_empty_topics = TRUE,comparison_group = 'pairs', 
-#                 distance_formula = 'kullback-leibler', plotly = FALSE,regions = FALSE,
-#                 val = 'rca')  %>% 
-#   theme_plot()
-# 
-# ggsave('results/figures/N_distance_KL_pairs_rca.png')
-## cannot compute KL
-
-plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',
-                distance_formula = 'cosine', plotly = FALSE,regions = FALSE,val = 'p') %>% 
-  theme_plot()
-
-ggsave('results/figures/N_distance_cosine_diff.png')
-
-plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',
+plot_distance_N(df = df_dim,t = 5000,f_empty_topics = FALSE,comparison_group = 'diff',
                 distance_formula = 'cosine', plotly = FALSE,regions = FALSE,val = 'rca') %>% 
-  theme_plot()
+  theme_plot()+
+  geom_smooth()+
+  labs(title = "", y= 'cosine similarity')
 
 ggsave('results/figures/N_distance_cosine_diff_rca.png')
-
-
-plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',
-                distance_formula = 'kullback-leibler', plotly = FALSE,regions = FALSE,val = 'p') %>% 
-  theme_plot()
-
-ggsave('results/figures/N_distance_KL_diff.png')
-
-# plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'diff',
-#                 distance_formula = 'kullback-leibler', plotly = FALSE,regions = FALSE,val = 'rca') %>% 
-#   theme_plot()
-# 
-# ggsave('results/figures/N_distance_KL_diff_rca.png')
-
-
-## by regions
-
-plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs',
-                distance_formula = 'cosine', plotly = FALSE,regions = TRUE)  %>% 
-  theme_plot()
-
-ggsave('results/figures/N_distance_cosine_pairs_region.png')
-
-plot_distance_N(df_dim,t = 5000,f_empty_topics = TRUE,comparison_group = 'pairs', 
-                distance_formula = 'kullback-leibler', plotly = FALSE,regions = TRUE)  %>% 
-  theme_plot()
-
-ggsave('results/figures/N_distance_KL_pairs_region.png')
-
 
 
 ### Word maps
@@ -111,29 +54,96 @@ pal <- wes_palette("Zissou1", 100, type = "continuous")
 world <- map_data("world") %>% 
   mutate(country_code = countryname(region,destination = 'country.name.en')) 
 
-#1. Diff, prop
-gdata <- build_dataset(df_dim,t=1000,f_empty_topics=TRUE, comparison_group='diff',
-                       distance_formula='cosine',val = 'p') %>% 
-  pivot_wider(names_from = type, values_from = distance) %>% 
+#1.  proportion of authors by group
+gdata_p <-  df_dim %>%
+  group_by(country_code,type) %>% 
+  summarise(N = sum(N)) %>% 
+  group_by(country_code) %>% 
+  mutate(p = N/sum(N)) %>% 
+  select(-N) %>% 
+  filter(type=='National') %>% 
+  # pivot_wider(names_from = type, values_from = p,values_fill = 0) %>% 
   mutate(country_code = countryname(country_code,destination = 'country.name.en'))
 
-# world %>% filter(is.na(International)) %>% 
-#   pull(region) %>% 
-#   unique()
-
-
-  world %>% 
-    left_join(gdata,by = join_by(country_code)) %>% 
-    pivot_longer(cols = International:Emigrant, names_to = 'groups', values_to = 'distance') %>% 
+  prop_nationals <- world %>% 
+    left_join(gdata_p,by = join_by(country_code)) %>% 
+    mutate(type='National') %>% 
     filter(region!='Antarctica') %>% 
     ggplot(aes(x = long, y = lat, group = group)) + 
     coord_fixed(1.3) +
-    geom_polygon(aes(fill = distance)) +
-    facet_wrap(.~groups)+
-    scale_fill_gradientn(colours = pal,limits = c(.75,1)) + 
-    plain_theme
+    geom_polygon(aes(fill = p)) +
+    facet_wrap(.~type)+
+    scale_fill_gradientn(colours = pal, labels=scales::percent,limits = c(0,1)) +
+    plain_theme+
+    labs(fill='Proportion of authors')+
+    theme( legend.position = 'none',
+           text = element_text(size = 18),
+      plot.margin = margin(0,-20,0,-20,unit = 'pt'))
 
-ggsave('results/figures/maps1.png')
+  gdata_p2 <-  df_dim %>%
+    filter(type!='National') %>% 
+    mutate(type = case_match(type,
+                             'Emigrant' ~'Migrant',
+                             'Immigrant' ~'Migrant',
+                             'International' ~ 'International')) %>% 
+    group_by(country_code,type) %>% 
+    summarise(N = sum(N)) %>% 
+    group_by(country_code) %>% 
+    mutate(p = N/sum(N)) %>%
+    # ungroup() %>% 
+    # complete(country_code,type,fill=list(N=0,p=0))
+    select(-N) %>% 
+    pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
+    mutate(country_code = countryname(country_code,destination = 'country.name.en'))
+  
+  prop_rest1 <- world %>% 
+    left_join(gdata_p2,by = join_by(country_code)) %>% 
+    pivot_longer(cols = International:Migrant, names_to = 'groups', values_to = 'p') %>%
+    filter(region!='Antarctica') %>% 
+    ggplot(aes(x = long, y = lat, group = group)) + 
+    coord_fixed(1.3) +
+    geom_polygon(aes(fill = p)) +
+    facet_wrap(.~groups)+
+    scale_fill_gradientn(colours = pal, labels=scales::percent, limits = c(0,1)) +
+    plain_theme+
+    labs(fill='Proportion of authors')+
+    theme(text = element_text(size = 18),
+          legend.position = 'none',
+          plot.margin = margin(-10,-10,-10,-10,unit = 'pt'))
+  
+  gdata_p3 <-  df_dim %>%
+    filter(type%in%c('Emigrant','Immigrant')) %>% 
+    group_by(country_code,type) %>% 
+    summarise(N = sum(N)) %>% 
+    group_by(country_code) %>% 
+    mutate(p = N/sum(N)) %>%
+    # ungroup() %>% 
+    # complete(country_code,type,fill=list(N=0,p=0))
+    select(-N) %>% 
+    pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
+    mutate(country_code = countryname(country_code,destination = 'country.name.en'))
+  
+  prop_rest2 <- world %>% 
+    left_join(gdata_p3,by = join_by(country_code)) %>% 
+    pivot_longer(cols = Emigrant:Immigrant, names_to = 'groups', values_to = 'p') %>%
+    filter(region!='Antarctica') %>% 
+    ggplot(aes(x = long, y = lat, group = group)) + 
+    coord_fixed(1.3) +
+    geom_polygon(aes(fill = p)) +
+    facet_wrap(.~groups)+
+    scale_fill_gradientn(colours = pal, labels=scales::percent, limits = c(0,1)) +
+    plain_theme+
+    labs(fill='Proportion of\nauthors')+
+    theme(text = element_text(size = 18),
+          legend.key.width = unit(1.5, "cm"),
+          plot.margin = margin(-10,-10,-10,-10,unit = 'pt'))
+  
+  leg <- get_legend(prop_rest2)
+  
+ggarrange(prop_nationals,prop_rest1,prop_rest2,ncol = 1,labels = 'auto',heights = c(1.1,1,1),
+          common.legend = TRUE,legend = 'bottom',legend.grob = leg)
+  
+ggsave('results/figures/maps1_prop.png',bg = 'white')
   
 #2 diff, rca
 
@@ -151,34 +161,12 @@ world %>%
   geom_polygon(aes(fill = distance)) +
   facet_wrap(.~groups)+
   scale_fill_gradientn(colours = pal,limits = c(.25,1)) +
-  plain_theme
+  plain_theme+
+  labs(fill='Cosine similarity')
 
 ggsave('results/figures/maps1_rca.png')
 
-
-#3. pairs, p
-
-gdata3 <- build_dataset(df_dim,t=1000,f_empty_topics=TRUE, comparison_group='pairs',
-                       distance_formula='cosine',val = 'p') %>% 
-  pivot_wider(names_from = type, values_from = distance) %>% 
-  mutate(country_code = countryname(country_code,destination = 'country.name.en'))
-
-
-world %>%   
-  left_join(gdata3,by = join_by(country_code)) %>% 
-  pivot_longer(cols = International_Immigrant:Emigrant_International, names_to = 'groups', values_to = 'distance') %>% 
-  filter(region!='Antarctica') %>% 
-  ggplot(aes(x = long, y = lat, group = group)) + 
-  coord_fixed(1.3) +
-  geom_polygon(aes(fill = distance)) +
-  facet_wrap(.~groups)+
-  scale_fill_gradientn(colours = pal,limits = c(.75,1)) + 
-  plain_theme
-
-ggsave('results/figures/maps2.png')
-
-
-# 4. pairs, rca
+# 3. pairs, rca
 gdata4 <- build_dataset(df_dim,t=1000,f_empty_topics=TRUE, comparison_group='pairs',
                         distance_formula='cosine',val = 'rca') %>% 
   pivot_wider(names_from = type, values_from = distance) %>% 
@@ -196,12 +184,9 @@ world %>%
   # scale_fill_gradientn(colours = pal,limits = c(.5,1)) +
   scale_fill_gradientn(colours = pal)+
   # scale_fill_gradientn(colours = pal,limits = c(.75,1)) + 
-  plain_theme
+  plain_theme+
+  labs(fill='Cosine similarity')
 
 ggsave('results/figures/maps2_rca.png')
-
-### Distance needs to be above/below expected! The topic size's makes all groups similar. 
-## I can renormalize the topics to show the RCA instead of the number of papers.
-### or the RCA of each group-country, but normalize by global topic size.
 
 

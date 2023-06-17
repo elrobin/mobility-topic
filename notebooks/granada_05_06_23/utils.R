@@ -131,6 +131,7 @@ total_by_country <- function(df){
     
 }
 
+
 build_dataset <- function(df,t=1000,f_empty_topics=TRUE, comparison_group='diff',
                           distance_formula="kullback-leibler"){
   

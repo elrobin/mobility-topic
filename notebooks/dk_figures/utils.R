@@ -202,8 +202,6 @@ plot_distance_N <- function(df,t,f_empty_topics=TRUE, comparison_group='pairs',
 
 ## figure two: w.r.p to the proportion of the group on the country
 
-
-
 summarise_data2 <- function(df){
   df %>% 
     group_by(country_code,type) %>% 
