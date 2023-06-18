@@ -1,6 +1,9 @@
 library(wesanderson)
 library(ISOcodes)
 library(ggpubr)
+library(scales)
+library(ggridges)
+library(ggrepel)
 source("notebooks/dk_figures/utils.R")
 
 df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
@@ -190,3 +193,117 @@ world %>%
 ggsave('results/figures/maps2_rca.png')
 
 
+## prop vs similarity
+df_prop <- df_dim %>%
+  group_by(country_code,type) %>% 
+  summarise(N = sum(N)) %>% 
+  group_by(country_code) %>% 
+  mutate(prop = N/sum(N)) %>% 
+  select(-N) %>% 
+  # pivot_wider(names_from = type, values_from = p,values_fill = 0) %>% 
+  mutate(country_code = countryname(country_code,destination = 'country.name.en'))
+
+
+df_cosine <- build_dataset(df_dim,t=10000,f_empty_topics=TRUE, comparison_group='diff',
+                        distance_formula='cosine',val = 'rca') 
+
+gdata <- df_cosine %>% 
+  rename(cosine=distance) %>% 
+  left_join(df_prop,by = join_by(country_code, type)) %>% 
+  group_by(type) %>% 
+  mutate(mean_cos = weighted.mean(cosine,w=country_N),
+         mean_prop = weighted.mean(prop,w=country_N),
+         region = countryname(country_code,destination='region'))
+
+# library(crosstalk)
+# shared_df <- SharedData$new(gdata, key = ~country_code)
+
+
+# plot <- shared_df %>% 
+plot <- gdata %>% 
+  ggplot(aes(prop, cosine,color=region, size=country_N))+
+  geom_hline(aes(yintercept = mean_cos))+
+  geom_vline(aes(xintercept = mean_prop))+
+  geom_point()+
+  facet_grid(type~.)+
+  theme_minimal()+
+  labs(x= 'Proportion',y='Cosine', color='', size= 'Country # publications')+
+  scale_x_continuous(labels = percent)+
+  theme(legend.position = 'bottom')
+
+plot
+
+ggsave('results/figures/prop_vs_cosine.png')
+
+
+# density
+annotate_data1 <-  gdata %>% 
+  mutate(continent = countryname(country_code,destination='continent')) %>% 
+  group_by(type) %>% 
+  top_n(5,wt = prop) %>%  
+  arrange(-country_N)
+
+density_1 <-
+  gdata %>% 
+  # filter(type=='National') %>% 
+  ggplot(aes(x=prop, y=type, fill = factor(stat(quantile))))+
+  stat_density_ridges(
+    jittered_points = TRUE,
+    position = position_points_jitter(width = 0, height = 0),
+    point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7,
+    geom = "density_ridges_gradient", calc_ecdf = TRUE,
+    quantiles = 4, quantile_lines = TRUE
+  ) +
+    geom_label_repel(data=annotate_data1,
+                     aes(label=country_code,
+                         x=prop, y = type,
+                         color =continent),
+                     # nudge_x = .05,
+                     # nudge_y = .15,
+                     inherit.aes = FALSE)+
+    scale_x_continuous(labels = percent)+
+  scale_fill_viridis_d(name = "Quartiles",alpha=0.75)+
+    # scale_color_manual(values=wes_palette(name = 'Moonrise2'))+
+  theme_minimal()+
+    guides(fill= 'none')+
+  labs(x = 'Proportion', y='')+
+  theme(legend.position = 'bottom',
+        text = element_text(size=20))
+
+
+# ggplot('results/figures/prop_dist.png')
+
+annotate_data2 <-  gdata %>% 
+  mutate(continent = countryname(country_code,destination='continent')) %>% 
+  group_by(type) %>% 
+  top_n(5,wt = -cosine) %>%  
+  arrange(-country_N)
+
+density_2 <- gdata %>%
+# gdata %>% 
+  # filter(type=='National') %>% 
+  ggplot(aes(x=cosine, y=type, fill = factor(stat(quantile))))+
+  stat_density_ridges(
+    jittered_points = TRUE,
+    position = position_points_jitter(width = 0.05, height = 0),
+    point_shape = '|', point_size = 3, point_alpha = 1, alpha = 0.7,
+    geom = "density_ridges_gradient", calc_ecdf = TRUE,
+    quantiles = 4, quantile_lines = TRUE
+  ) +
+  scale_fill_viridis_d(name = "Quartiles",alpha=0.75)+
+  theme_minimal()+
+  ggrepel::geom_label_repel(data=annotate_data2, aes(label=country_code,
+                                    x=cosine, y = type, color=continent),
+                           # nudge_x = .05,
+                           # nudge_y = .15,
+            inherit.aes = FALSE)+
+  # scale_x_continuous(labels = percent)+
+  labs(x = 'Cosine', y='')+
+  theme(legend.position = 'none',
+        text = element_text(size=20))
+
+
+ggarrange(density_1,density_2,ncol = 1, labels = 'auto', common.legend = TRUE,
+          legend = 'bottom')
+
+ggsave('results/figures/densities.png', width = 12, height = 7, dpi = 300)
