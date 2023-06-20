@@ -6,6 +6,8 @@ library(ggridges)
 library(ggrepel)
 source("notebooks/dk_figures/utils.R")
 
+
+### I add the International collaboration to national papers
 df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
   # df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
   rename(N=p, 
@@ -13,11 +15,14 @@ df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
   filter(type !='all') %>% #!country_code %in% c('ZZALL','Unknown')
   mutate(type = case_match(type,
                            'national' ~ 'National',
-                           'international' ~ 'International',
+                           'international' ~ 'National',
+                           # 'international' ~ 'International',
                            'migrant' ~ 'Immigrant',
                            'abroad' ~ 'Emigrant'),
          country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name')
-  )  
+  )  %>% 
+  group_by(type, country_code, field, pub_year) %>% 
+  summarise(N = sum(N))
 
 
 theme_plot <- function(g){
@@ -58,62 +63,33 @@ world <- map_data("world") %>%
   mutate(country_code = countryname(region,destination = 'country.name.en')) 
 
 #1.  proportion of authors by group
+
 gdata_p <-  df_dim %>%
   group_by(country_code,type) %>% 
   summarise(N = sum(N)) %>% 
   group_by(country_code) %>% 
   mutate(p = N/sum(N)) %>% 
   select(-N) %>% 
-  filter(type=='National') %>% 
-  # pivot_wider(names_from = type, values_from = p,values_fill = 0) %>% 
+  # filter(type=='National') %>% 
+  pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
   mutate(country_code = countryname(country_code,destination = 'country.name.en'))
 
-  prop_nationals <- world %>% 
-    left_join(gdata_p,by = join_by(country_code)) %>% 
-    mutate(type='National') %>% 
-    filter(region!='Antarctica') %>% 
-    ggplot(aes(x = long, y = lat, group = group)) + 
-    coord_fixed(1.3) +
-    geom_polygon(aes(fill = p)) +
-    facet_wrap(.~type)+
-    scale_fill_gradientn(colours = pal, labels=scales::percent,limits = c(0,1)) +
-    plain_theme+
-    labs(fill='Proportion of authors')+
-    theme( legend.position = 'none',
-           text = element_text(size = 18),
-      plot.margin = margin(0,-20,0,-20,unit = 'pt'))
+map_prop_1 <- world %>% 
+  left_join(gdata_p,by = join_by(country_code)) %>% 
+  pivot_longer(cols = Emigrant:National, names_to = 'groups', values_to = 'p') %>%
+  mutate(groups = factor(groups, levels =c('National','Immigrant', 'Emigrant'))) %>% 
+  filter(region!='Antarctica') %>% 
+  ggplot(aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_polygon(aes(fill = p)) +
+  facet_wrap(.~groups)+
+  scale_fill_gradientn(colours = pal, labels=scales::percent,limits = c(0,1)) +
+  plain_theme+
+  labs(fill='Proportion of authors')+
+  theme( legend.position = 'none',
+         text = element_text(size = 18),
+         plot.margin = margin(-20,-15,-20,-15,unit = 'pt'))
 
-  gdata_p2 <-  df_dim %>%
-    filter(type!='National') %>% 
-    mutate(type = case_match(type,
-                             'Emigrant' ~'Migrant',
-                             'Immigrant' ~'Migrant',
-                             'International' ~ 'International')) %>% 
-    group_by(country_code,type) %>% 
-    summarise(N = sum(N)) %>% 
-    group_by(country_code) %>% 
-    mutate(p = N/sum(N)) %>%
-    # ungroup() %>% 
-    # complete(country_code,type,fill=list(N=0,p=0))
-    select(-N) %>% 
-    pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
-    mutate(country_code = countryname(country_code,destination = 'country.name.en'))
-  
-  prop_rest1 <- world %>% 
-    left_join(gdata_p2,by = join_by(country_code)) %>% 
-    pivot_longer(cols = International:Migrant, names_to = 'groups', values_to = 'p') %>%
-    filter(region!='Antarctica') %>% 
-    ggplot(aes(x = long, y = lat, group = group)) + 
-    coord_fixed(1.3) +
-    geom_polygon(aes(fill = p)) +
-    facet_wrap(.~groups)+
-    scale_fill_gradientn(colours = pal, labels=scales::percent, limits = c(0,1)) +
-    plain_theme+
-    labs(fill='Proportion of authors')+
-    theme(text = element_text(size = 18),
-          legend.position = 'none',
-          plot.margin = margin(-10,-10,-10,-10,unit = 'pt'))
-  
   gdata_p3 <-  df_dim %>%
     filter(type%in%c('Emigrant','Immigrant')) %>% 
     group_by(country_code,type) %>% 
@@ -126,7 +102,7 @@ gdata_p <-  df_dim %>%
     pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
     mutate(country_code = countryname(country_code,destination = 'country.name.en'))
   
-  prop_rest2 <- world %>% 
+  map_prop_2 <- world %>% 
     left_join(gdata_p3,by = join_by(country_code)) %>% 
     pivot_longer(cols = Emigrant:Immigrant, names_to = 'groups', values_to = 'p') %>%
     filter(region!='Antarctica') %>% 
@@ -141,9 +117,9 @@ gdata_p <-  df_dim %>%
           legend.key.width = unit(1.5, "cm"),
           plot.margin = margin(-10,-10,-10,-10,unit = 'pt'))
   
-  leg <- get_legend(prop_rest2)
+  leg <- get_legend(map_prop_2)
   
-ggarrange(prop_nationals,prop_rest1,prop_rest2,ncol = 1,labels = 'auto',heights = c(1.1,1,1),
+ggarrange(map_prop_1,map_prop_2,ncol = 1,labels = 'auto',heights = c(1.1,1),
           common.legend = TRUE,legend = 'bottom',legend.grob = leg)
   
 ggsave('results/figures/maps1_prop.png',bg = 'white')
@@ -157,7 +133,8 @@ gdata2 <- build_dataset(df_dim,t=1000,f_empty_topics=TRUE, comparison_group='dif
 
 world %>% 
   left_join(gdata2,by = join_by(country_code)) %>% 
-  pivot_longer(cols = International:Emigrant, names_to = 'groups', values_to = 'distance') %>% 
+  pivot_longer(cols = National:Emigrant, names_to = 'groups', values_to = 'distance') %>% 
+  mutate(groups = factor(groups, levels =c('National','Immigrant', 'Emigrant'))) %>% 
   filter(region!='Antarctica') %>% 
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
@@ -178,7 +155,8 @@ gdata4 <- build_dataset(df_dim,t=1000,f_empty_topics=TRUE, comparison_group='pai
 
 world %>%   
   left_join(gdata4,by = join_by(country_code)) %>% 
-  pivot_longer(cols = International_Immigrant:Emigrant_International, names_to = 'groups', values_to = 'distance') %>% 
+  pivot_longer(cols = Immigrant_National:Emigrant_National, names_to = 'groups', values_to = 'distance') %>% 
+  mutate(groups = factor(groups, levels=c('Immigrant_National','Emigrant_National','Emigrant_Immigrant'))) %>% 
   filter(region!='Antarctica') %>% 
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
@@ -191,7 +169,6 @@ world %>%
   labs(fill='Cosine similarity')
 
 ggsave('results/figures/maps2_rca.png')
-
 
 ## prop vs similarity
 df_prop <- df_dim %>%

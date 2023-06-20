@@ -5,18 +5,18 @@ library(plotly)
 library(countrycode)
 library(philentropy)
 
-df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
 # df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
-  rename(N=p, 
-         field = for_group_id) %>% 
-  filter(type !='all') %>% #!country_code %in% c('ZZALL','Unknown')
-  mutate(type = case_match(type,
-                           'national' ~ 'National',
-                           'international' ~ 'International',
-                           'migrant' ~ 'Immigrant',
-                           'abroad' ~ 'Emigrant'),
-         country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name')
-  )  
+# # df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
+#   rename(N=p, 
+#          field = for_group_id) %>% 
+#   filter(type !='all') %>% #!country_code %in% c('ZZALL','Unknown')
+#   mutate(type = case_match(type,
+#                            'national' ~ 'National',
+#                            'international' ~ 'International',
+#                            'migrant' ~ 'Immigrant',
+#                            'abroad' ~ 'Emigrant'),
+#          country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name')
+#   )  
 
 # df_wos <- read_excel('../../data/country_portfolios_WOS.xlsx') %>%
 # # df_wos <- read_excel('data/country_portfolios_WOS.xlsx') %>% 
@@ -58,8 +58,9 @@ summarise_data <- function(df){
   
   df <- df %>% 
     pivot_wider(id_cols = c(country_code,field),names_from = type, values_from = N) %>%
-  mutate(All = International + Immigrant + National,
-         c_International = All - International,
+  # mutate(All = International + Immigrant + National,
+  #        c_International = All - International,
+  mutate(All =  Emigrant+Immigrant + National,
          c_Immigrant = All - Immigrant,
          c_National = All - National,
          c_Emigrant = All - Emigrant) %>% 
@@ -89,18 +90,18 @@ compute_distances <- function(df,dist_method='kullback-leibler',type='pairs', v=
   res <- df %>% 
     select(-country_code,-N) %>% 
     pivot_wider(id_cols = c(country_code,field),names_from = type,values_from = !!val) %>% 
-    summarise(International_Immigrant = distance(rbind(International,Immigrant),method=dist_method),
-              International_National = distance(rbind(International,National),method=dist_method),
+    summarise(#International_Immigrant = distance(rbind(International,Immigrant),method=dist_method),
+              #International_National = distance(rbind(International,National),method=dist_method),
               Immigrant_National = distance(rbind(Immigrant,National),method=dist_method),
               Emigrant_Immigrant = distance(rbind(Emigrant,Immigrant),method=dist_method),
-              Emigrant_National= distance(rbind(Emigrant,National),method=dist_method),
-              Emigrant_International= distance(rbind(Emigrant,International),method=dist_method))
+              Emigrant_National= distance(rbind(Emigrant,National),method=dist_method))
+              #Emigrant_International= distance(rbind(Emigrant,International),method=dist_method))
   }
   if (type=='diff') {
     res <- df %>%
       select(-country_code) %>%
       pivot_wider(id_cols = c(country_code,field),names_from = type, values_from = !!val) %>%
-      summarise(International = distance(rbind(International,c_International),method=dist_method),
+      summarise(#International = distance(rbind(International,c_International),method=dist_method),
                 National = distance(rbind(National,c_National),method=dist_method),
                 Immigrant = distance(rbind(Immigrant,c_Immigrant),method=dist_method),
                 Emigrant = distance(rbind(Emigrant,c_Emigrant),method=dist_method)
@@ -123,7 +124,7 @@ total_by_country <- function(df){
     
 }
 
-build_dataset <- function(df,t=1000,f_empty_topics=TRUE, comparison_group='diff',
+build_dataset <- function(df,t=1000,f_empty_topics=FALSE, comparison_group='diff',
                           distance_formula="kullback-leibler", val='rca'){
   
   # df: dataset used (df_dim)
