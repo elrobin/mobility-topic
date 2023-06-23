@@ -1,0 +1,364 @@
+---
+title: "Country-region profiles"
+format: html
+editor: visual
+---
+
+## Data wrangling
+
+Main dataset
+
+```{r}
+# load libraries
+library(readr)
+library(dplyr)
+# import data
+df.portfolios <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/mobility-topics/June2023/migrants_origin_destination.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+# Country codes
+codes <-
+  read_delim(
+    "G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/mobility-topics/June2023/iso-country-un-region-codes.txt",
+    delim = ","
+  )
+
+# Merge
+df.portfolios <- df.portfolios %>%
+  left_join(codes, by = c("country_code" = "alpha-2")) %>%
+  select(
+    "region",
+    "sub-region",
+    "country_code_origin",
+    "country_code",
+    "for_group_id",
+    "pub_year",
+    "for_group",
+    "for_division",
+    "(No column name)"
+  ) %>%
+  left_join(codes, 
+            by = c("country_code_origin" = "alpha-2"),
+            suffix = c("_destination", "_origin")) %>%
+  select(
+    "region_origin",
+    "sub-region_origin",
+    "country_code_origin",
+    "region_destination",
+    "sub-region_destination",
+    "country_code",
+    "for_group_id",
+    "pub_year",
+    "for_group",
+    "for_division",
+    "(No column name)"
+  )
+head(df.portfolios)
+```
+
+Import global portfolios
+
+```{r}
+
+df.global <- read_delim("G:/Mi unidad/1. Work sync/Projects/2 In progress/2021_Cassidy/mobility-topics/June2023/country_portfolios.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+head(df.global)
+
+df.global <- df.global %>%
+  left_join(codes, by = c("country_code" = "alpha-2")) %>%
+  select(
+    "type",
+    "region",
+    "sub-region",
+    "country_code",
+    "for_group_id",
+    "pub_year",
+    "for_group",
+    "for_division",
+    "p"
+  ) %>%
+  filter(type == "all" | type =="national" | type =="international")
+
+head(df.global)
+```
+
+Add for the complete period
+
+```{r}
+# By region
+  # Portfolio all
+  df.all.region <- df.global %>%
+    filter(type == "all") %>%
+    group_by(region,
+          for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio national
+  df.nat.region <- df.global %>%
+    filter(type == "national") %>%
+    group_by(region,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio international
+  df.inter.region <- df.global %>%
+    filter(type == "international") %>%
+    group_by(region,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio of emigrants
+  df.emigrants.region <- df.portfolios %>%
+    group_by(region_origin, 
+             for_group_id, 
+             for_group,
+             for_division) %>%
+  summarise(p = sum(`(No column name)`))
+  # Portfolio of immigrants
+  df.immigrants.region <- df.portfolios %>%
+    group_by(region_destination, 
+             for_group_id, 
+             for_group,
+             for_division) %>%
+    summarise(p = sum(`(No column name)`))
+
+# By sub-region
+  # Portfolio all
+  df.all.subregion <- df.global %>%
+    filter(type == "all") %>%
+    group_by(`sub-region`,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio national
+  df.nat.subregion <- df.global %>%
+    filter(type == "national") %>%
+    group_by(`sub-region`,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio international
+  df.inter.subregion <- df.global %>%
+    filter(type == "international") %>%
+    group_by(`sub-region`,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio of emigrants
+  df.emigrants.subregion <- df.portfolios %>%
+    group_by(`sub-region_origin`, 
+             for_group_id, 
+             for_group,
+             for_division) %>%
+  summarise(p = sum(`(No column name)`))
+  # Portfolio of immigrants
+  df.immigrants.subregion <- df.portfolios %>%
+    group_by(`sub-region_destination`, 
+             for_group_id, 
+             for_group,
+             for_division) %>%
+    summarise(p = sum(`(No column name)`))
+
+# By country
+  # Portfolio all
+  df.all.country <- df.global %>%
+    filter(type == "all") %>%
+    group_by(country_code,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio national
+  df.nat.country <- df.global %>%
+    filter(type == "national") %>%
+    group_by(country_code,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio international
+  df.inter.country <- df.global %>%
+    filter(type == "international") %>%
+    group_by(country_code,
+           for_group_id, 
+           for_group,
+           for_division) %>%
+  summarise(p = sum(p))
+  # Portfolio of emigrants
+  df.emigrants.country <- df.portfolios %>%
+    group_by(country_code_origin, 
+             for_group_id, 
+             for_group,
+             for_division) %>%
+  summarise(p = sum(`(No column name)`))
+  # Portfolio of immigrants
+  df.immigrants.country <- df.portfolios %>%
+    group_by(country_code, 
+             for_group_id, 
+             for_group,
+             for_division) %>%
+    summarise(p = sum(`(No column name)`))
+
+
+# Add name variable
+df.all.region$group = "all"
+df.nat.region$group = "national"
+df.inter.region$group = "international"
+df.immigrants.region$group = "import"
+df.emigrants.region$group = "export"
+
+df.all.subregion$group = "all"
+df.nat.subregion$group = "national"
+df.inter.subregion$group = "international"
+df.immigrants.subregion$group = "import"
+df.emigrants.subregion$group = "export"
+
+df.all.country$group = "all"
+df.nat.country$group = "national"
+df.inter.country$group = "international"
+df.immigrants.country$group = "import"
+df.emigrants.country$group = "export"
+
+# Rename for consistency
+names(df.all.region) <-
+  c("region",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.nat.region) <-
+  c("region",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.inter.region) <-
+  c("region",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.immigrants.region) <-
+  c("region",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.emigrants.region) <-
+  c("region",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+
+names(df.all.subregion) <-
+  c("subregion",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.nat.subregion) <-
+  c("subregion",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.inter.subregion) <-
+  c("subregion",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.immigrants.subregion) <-
+  c("subregion",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.emigrants.subregion) <-
+  c("subregion",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+
+names(df.all.country) <-
+  c("country",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.nat.country) <-
+  c("country",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.inter.country) <-
+  c("country",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.immigrants.country) <-
+  c("country",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+names(df.emigrants.country) <-
+  c("country",
+    "for_group_id",
+    "for_group",
+    "for_division",
+    "p",
+    "group")
+
+df.region <-
+  rbind(
+    df.all.region,
+    df.nat.region,
+    df.inter.region,
+    df.immigrants.region,
+    df.emigrants.region
+  )
+
+df.subregion <-
+  rbind(
+    df.all.subregion,
+    df.nat.subregion,
+    df.inter.subregion,
+    df.immigrants.subregion,
+    df.emigrants.subregion
+  )
+
+df.country <-
+  rbind(
+    df.all.country,
+    df.nat.country,
+    df.inter.country,
+    df.immigrants.country,
+    df.emigrants.country
+  )
+
+```
