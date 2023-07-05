@@ -179,6 +179,11 @@ plot_distance_N <- function(df,t,f_empty_topics=TRUE, comparison_group='pairs',
                          distance_formula=distance_formula, val=val) %>% 
     mutate(region = countrycode(country_code, origin = 'country.name', destination = "un.region.name"))
   
+  if (comparison_group=='pairs') {
+    gdata <- gdata %>% 
+      filter(type!='Emigrant_Immigrant')
+  }
+  
   if (regions) {
     gdata <- gdata %>% 
       filter(region!='NA')
