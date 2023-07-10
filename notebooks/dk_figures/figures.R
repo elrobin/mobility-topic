@@ -166,9 +166,10 @@ gdata4 <- build_dataset(df_dim,t=5000,f_empty_topics=TRUE, comparison_group='pai
                         distance_formula='cosine',val = 'rca') %>%
   filter(type!='Emigrant_Immigrant') %>% 
   pivot_wider(names_from = type, values_from = distance) %>% 
-  mutate(country_code = countryname(country_code,destination = 'country.name.en'),
-         Immigrant_National = percent_rank(Immigrant_National)*100,
-         Emigrant_National = percent_rank(Emigrant_National)*100)
+  mutate(country_code = countryname(country_code,destination = 'country.name.en'))
+#,
+         # Immigrant_National = percent_rank(Immigrant_National)*100,
+         # Emigrant_National = percent_rank(Emigrant_National)*100)
 
 
 world %>%   
@@ -187,7 +188,7 @@ world %>%
   theme(text=element_text(size = 24))+
   labs(fill='Cosine similarity\nranking')
 
-ggsave('results/figures/maps2_rca.png', width = 16, height = 6, dpi = 300)
+ggsave('results/figures/maps2_rca2.png', width = 16, height = 6, dpi = 300)
 
 
 # Ratios
@@ -196,8 +197,8 @@ gdata5 <- build_dataset(df_dim,t=5000,f_empty_topics=TRUE, comparison_group='pai
   filter(type!='Emigrant_Immigrant') %>% 
   pivot_wider(names_from = type, values_from = distance) %>% 
   mutate(country_code = countryname(country_code,destination = 'country.name.en'),
-         ratio = Immigrant_National/Emigrant_National,
-         ratio = percent_rank(ratio)*100)
+         ratio = Immigrant_National/Emigrant_National)
+         # ratio = percent_rank(ratio)*100)
 
 
 world %>%   
@@ -210,13 +211,34 @@ world %>%
   geom_polygon(aes(fill = ratio)) +
   # facet_wrap(.~groups)+
   # scale_fill_gradientn(colours = pal,limits = c(.5,1)) +
-  scale_fill_gradientn(colours = pal)+
-  # scale_fill_gradientn(colours = pal,limits = c(0,1)) +
+  # scale_fill_gradientn(colours = pal)+
+  scale_fill_gradientn(colours = pal,limits = c(0.5,1.5)) +
   plain_theme+
   theme(text=element_text(size = 12))+
   labs(fill='Immigrants/Emigrants\ncosine ratio ranking')
 
-ggsave('results/figures/maps3_ratio.png', width = 12, height = 6, dpi = 300)
+ggsave('results/figures/maps3_ratio1.png', width = 12, height = 6, dpi = 300)
+
+
+data_for_nico_1 <- build_dataset(df_dim,t=1000,f_empty_topics=TRUE, comparison_group='pairs',
+                                         distance_formula='cosine',val = 'rca') %>%
+  filter(type!='Emigrant_Immigrant') %>% 
+  pivot_wider(names_from = type, values_from = distance) %>% 
+  mutate(cosine_ratio = Immigrant_National/Emigrant_National)
+
+data_for_nico_2 <- df_dim %>%
+  filter_countries(tr = 1000) %>% 
+  group_by(country_code,type) %>% 
+  summarise(N = sum(N)) %>% 
+  group_by(country_code) %>% 
+  mutate(p = N/sum(N)) %>% 
+  select(-N) %>% 
+  pivot_wider(names_from = type, values_from = p,values_fill = 0,names_prefix = 'prop_') %>%
+  mutate(prop_ratio = prop_Immigrant/prop_Emigrant)
+
+left_join(data_for_nico_1,data_for_nico_2) %>% 
+  write_csv('results/emigrant_immigrant_ratio.csv')
+### PROP
 
 
 # prop vs similarity ------------------------------------------------------
