@@ -21,9 +21,10 @@ df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
                            # 'international' ~ 'International',
                            'migrant' ~ 'Immigrant',
                            'abroad' ~ 'Emigrant'),
-         country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name')
+         country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name'),
+         continent = countrycode(country_code, origin = 'country.name', destination = 'continent')
   )  %>% 
-  group_by(type, country_code, field, pub_year) %>% 
+  group_by(type,continent, country_code, field, pub_year) %>% 
   summarise(N = sum(N))
 
 
@@ -46,6 +47,52 @@ plot_distance_N(df = df_dim,t = 5000,f_empty_topics = FALSE,comparison_group = '
 
 ggsave('results/figures/N_distance_cosine_pairs_rca.png', width = 12, height = 6,dpi = 300)
 
+
+# scatterplots ------------------------------------------------------------
+
+# Emigrants Immigrants
+
+scatter_df <- df_dim %>% 
+  filter(!is.na(continent)) %>% 
+  group_by(continent,country_code, type) %>% 
+  summarise(N = sum(N)) %>% 
+  group_by(country_code) %>% 
+  mutate(p = N/sum (N))
+
+total_n <- scatter_df %>% 
+  group_by(country_code) %>% 
+  summarise(N = sum(N))
+
+scatter_df <- scatter_df %>% 
+  select(-N) %>% 
+  pivot_wider(names_from = type, values_from = p, values_fill = 0) %>% 
+  left_join(total_n,by = join_by(country_code))
+
+ggplot(scatter_df,aes(Immigrant, Emigrant, color=continent, size=N))+
+  geom_hline(yintercept = weighted.mean(scatter_df$Emigrant,w = scatter_df$N))+
+  geom_vline(xintercept = weighted.mean(scatter_df$Immigrant,w = scatter_df$N))+
+  geom_point()+
+  scale_x_continuous(labels = percent, limits = c(0,1))+
+  scale_y_continuous(labels = percent, limits = c(0,1))+
+  guides(size='none')+
+  theme_minimal()+
+  theme(legend.position = 'bottom',
+        text = element_text(size=18))
+
+ggsave('results/figures/emigrant_immigrant_scatterplot.png', width = 10, height = 4,dpi = 300)
+
+scatter_df %>%
+  mutate(ratio = Emigrant/Immigrant) %>%
+  ggplot(aes(N, ratio, color=continent))+
+  geom_point()+
+  # scale_x_continuous(labels = percent, limits = c(0,1))+
+  # scale_y_continuous(labels = percent, limits = c(0,1))+
+  guides(size='none')+
+  theme_minimal()+
+  theme(legend.position = 'bottom',
+        text = element_text(size=18))
+
+ggsave('results/figures/ratio_size_scatterplot.png', width = 10, height = 4,dpi = 300)
 
 # Word maps ---------------------------------------------------------------
 
@@ -80,7 +127,8 @@ gdata_p <-  df_dim %>%
   pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
   mutate(country_code = countryname(country_code,destination = 'country.name.en'))
 
-map_prop_1 <- world %>% 
+map_prop_1 <-
+  world %>% 
   left_join(gdata_p,by = join_by(country_code)) %>% 
   pivot_longer(cols = Emigrant:National, names_to = 'groups', values_to = 'p') %>%
   mutate(groups = factor(groups, levels =c('National','Immigrant', 'Emigrant'))) %>% 
@@ -89,7 +137,8 @@ map_prop_1 <- world %>%
   coord_fixed(1.3) +
   geom_polygon(aes(fill = p)) +
   facet_wrap(.~groups)+
-  scale_fill_gradientn(colours = pal)+
+  scale_fill_viridis_c()+
+  # scale_fill_gradientn(colours = pal)+
   # scale_fill_gradientn(colours = pal, labels=scales::percent,limits = c(0,1)) +
   plain_theme+
   labs(fill='Proportion of\nauthors')+
@@ -112,22 +161,24 @@ map_prop_1 <- world %>%
     pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
     ungroup() %>% 
     mutate(country_code = countryname(country_code,destination = 'country.name.en'),
+           ratio = Emigrant/Immigrant)
            #National = percent_rank(National)*100,
-           Emigrant = percent_rank(Emigrant)*100,
-           Immigrant = percent_rank(Immigrant)*100)
+           # Emigrant = percent_rank(Emigrant)*100,
+           # Immigrant = percent_rank(Immigrant)*100)
   
-  map_prop_2 <- world %>% 
+    map_prop_2 <- world %>% 
     left_join(gdata_p3,by = join_by(country_code)) %>% 
-    pivot_longer(cols = Emigrant:Immigrant, names_to = 'groups', values_to = 'p') %>%
+    # pivot_longer(cols = Emigrant:Immigrant, names_to = 'groups', values_to = 'p') %>%
     filter(region!='Antarctica') %>% 
     ggplot(aes(x = long, y = lat, group = group)) + 
     coord_fixed(1.3) +
-    geom_polygon(aes(fill = p)) +
-    facet_wrap(.~groups)+
-    scale_fill_gradientn(colours = pal) +
+    geom_polygon(aes(fill = ratio)) +
+      scale_fill_viridis_c()+
+    # facet_wrap(.~groups)+
+    # scale_fill_gradientn(colours = pal) +
     # scale_fill_gradientn(colours = pal, labels=scales::percent, limits = c(0.25,.75)) +
     plain_theme+
-    labs(fill='Ranking')+
+    labs(fill='Emigrants/Immigrants\nratio')+
     theme(text = element_text(size = 18),
           legend.key.width = unit(1.5, "cm"),
           plot.margin = margin(-10,-10,-10,-10,unit = 'pt'))
@@ -155,7 +206,8 @@ world %>%
   coord_fixed(1.3) +
   geom_polygon(aes(fill = distance)) +
   facet_wrap(.~groups)+
-  scale_fill_gradientn(colours = pal,limits = c(.25,1)) +
+  scale_fill_viridis_c()+
+  # scale_fill_gradientn(colours = pal,limits = c(.25,1)) +
   plain_theme+
   labs(fill='Cosine similarity')
 
@@ -181,8 +233,9 @@ world %>%
   coord_fixed(1.3) +
   geom_polygon(aes(fill = distance)) +
   facet_wrap(.~groups)+
+  scale_fill_viridis_c()+
   # scale_fill_gradientn(colours = pal,limits = c(.5,1)) +
-  scale_fill_gradientn(colours = pal)+
+  # scale_fill_gradientn(colours = pal)+
   # scale_fill_gradientn(colours = pal,limits = c(0,1)) +
   plain_theme+
   theme(text=element_text(size = 24))+
@@ -212,7 +265,8 @@ world %>%
   # facet_wrap(.~groups)+
   # scale_fill_gradientn(colours = pal,limits = c(.5,1)) +
   # scale_fill_gradientn(colours = pal)+
-  scale_fill_gradientn(colours = pal,limits = c(0.5,1.5)) +
+  # scale_fill_gradientn(colours = pal,limits = c(0.5,1.5)) +
+  scale_fill_viridis_c()+
   plain_theme+
   theme(text=element_text(size = 12))+
   labs(fill='Immigrants/Emigrants\ncosine ratio ranking')
@@ -392,3 +446,36 @@ gdata_pairs %>%
   row_group_order(groups = levels(gdata_pairs$type)) %>% 
   fmt_number(columns = cosine,decimals = 2) %>% 
   gt::gtsave('results/tables/least_similar_pairs.docx')
+
+
+# selection of countries --------------------------------------------------
+
+## 1. Countries with very large and very small ratios Emigrant/Immigrant
+## 2. With large number of papers
+
+
+df_selection <- scatter_df %>%
+  ungroup() %>% 
+  mutate(ratio = Emigrant/Immigrant) %>% 
+  arrange(-N) 
+  
+summary(df_selection)
+
+df_selection <- df_selection %>% 
+  filter(N>5000, ratio>1.5|ratio<0.5)
+  
+df_selection %>% 
+  ggplot(aes(Immigrant, Emigrant, color=continent, size=N,label=country_code, 
+             text=paste('ratio: ',round(ratio,digits = 2))))+
+  geom_hline(yintercept = weighted.mean(df_selection$Emigrant,w = df_selection$N))+
+  geom_vline(xintercept = weighted.mean(df_selection$Immigrant,w = df_selection$N))+
+  # geom_point()+
+  geom_text_repel()+
+  scale_x_continuous(labels = percent, limits = c(0,.75))+
+  scale_y_continuous(labels = percent, limits = c(0,.75))+
+  guides(size='none')+
+  theme_minimal()+
+  theme(legend.position = 'bottom',
+        text = element_text(size=18))
+
+ggsave('results/figures/selection_countries.png', dpi = 300)
