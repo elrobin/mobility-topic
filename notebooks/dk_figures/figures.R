@@ -166,29 +166,37 @@ map_prop_1 <-
            # Emigrant = percent_rank(Emigrant)*100,
            # Immigrant = percent_rank(Immigrant)*100)
   
-    map_prop_2 <- world %>% 
+    map_prop_2 <-
+      world %>% 
     left_join(gdata_p3,by = join_by(country_code)) %>% 
     # pivot_longer(cols = Emigrant:Immigrant, names_to = 'groups', values_to = 'p') %>%
     filter(region!='Antarctica') %>% 
     ggplot(aes(x = long, y = lat, group = group)) + 
     coord_fixed(1.3) +
     geom_polygon(aes(fill = ratio)) +
-      scale_fill_viridis_c()+
+    # scale_fill_gradientn(colours = c("red", "red", "yellow", "green"), 
+    #                      values = rescale(log(c(0.01, .5 - 0.0000000000000001, .5, 0.2))), 
+    #                      breaks = c(log(cutoff)), label = c(cutoff))
+    scale_fill_viridis_c(values = rescale(c(0,.75,1.25,2,round(max(gdata_p3$ratio),digits = 2))),
+                         breaks = c(0,.75,1.25,2,round(max(gdata_p3$ratio),digits = 2)-.01))+
     # facet_wrap(.~groups)+
     # scale_fill_gradientn(colours = pal) +
     # scale_fill_gradientn(colours = pal, labels=scales::percent, limits = c(0.25,.75)) +
     plain_theme+
-    labs(fill='Emigrants/Immigrants\nratio')+
-    theme(text = element_text(size = 18),
-          legend.key.width = unit(1.5, "cm"),
+    labs(fill='Emigrants\nImmigrants\nratio')+
+    theme(legend.position = 'right',
+          text = element_text(size = 16),
+          legend.key.height = unit(1.2, "cm"),
+          legend.text = element_text(size=12),
+          # legend.key.width = unit(1.5, "cm"),
           plot.margin = margin(-10,-10,-10,-10,unit = 'pt'))
   
-  leg <- get_legend(map_prop_2)
+  # leg <- get_legend(map_prop_2)
   
 ggarrange(map_prop_1,map_prop_2,ncol = 1,labels = 'auto')#,heights = c(1.1,1)
           #common.legend = TRUE,legend = 'bottom',legend.grob = leg)
   
-ggsave('results/figures/maps1_prop.png',bg = 'white')
+ggsave('results/figures/maps1_prop.png',bg = 'white', width = 12, height = 8, dpi=300)
   
 #2 diff, rca
 
