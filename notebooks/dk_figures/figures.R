@@ -487,3 +487,32 @@ df_selection %>%
         text = element_text(size=18))
 
 ggsave('results/figures/selection_countries.png', dpi = 300)
+
+
+
+
+# Alternative figures -----------------------------------------------------
+
+df_cosine <- build_dataset(df_dim,t=10000,f_empty_topics=TRUE, comparison_group='diff',
+                           distance_formula='cosine',val = 'rca') 
+
+df_prop <- df_dim %>%
+  filter_countries(tr = 10000) %>% 
+  group_by(country_code,type) %>% 
+  summarise(N = sum(N)) %>% 
+  group_by(country_code) %>% 
+  mutate(p = N/sum(N)) %>% 
+  select(-N) %>% 
+  # filter(type=='National') %>% 
+  pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
+  mutate(country_code = countryname(country_code,destination = 'country.name.en'))
+
+df_prop %>% 
+  select(-National) %>% 
+  pivot_longer(Emigrant:Immigrant, names_to = 'type',values_to = 'prop') %>% 
+  left_join(df_cosine) %>% 
+  ggplot(aes(prop,distance))+
+  geom_point(aes(size=country_N,color=country_code))+
+  geom_smooth()+
+  facet_wrap(~type, scales = 'free')+
+  theme(legend.position = 'none')
