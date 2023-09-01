@@ -141,7 +141,7 @@ map_prop_1 <-
   # scale_fill_gradientn(colours = pal)+
   # scale_fill_gradientn(colours = pal, labels=scales::percent,limits = c(0,1)) +
   plain_theme+
-  labs(fill='Proportion of\nauthors')+
+  labs(fill='Proportion of\npapers')+
   # labs(fill='Proportion of authors')+
   theme(# legend.position = 'none',
     legend.key.width = unit(1.5, "cm"),

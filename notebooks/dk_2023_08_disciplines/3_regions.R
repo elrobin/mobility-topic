@@ -73,7 +73,7 @@ gdata <- data %>%
   inner_join(emigrants_prop,by = join_by(origin,destination)) %>% 
   ungroup() %>% 
   mutate(p_division_origin = N/total_division,
-         ratio = p_division_origin/p_origin,
+         #ratio = p_division_origin/p_origin,
          # for_division = str_replace_all(for_division,' ','\n'),
          # origin = str_replace_all(origin,' ','\n'),
          destination = str_replace_all(destination,' ','\n'),
@@ -85,66 +85,99 @@ gdata <- data %>%
          for_division = fct_reorder(for_division, p_division),
   )
 
-ggdata <- gdata %>%
-  filter(N > 1000, ratio > 1) %>%
-  arrange(-ratio)
 
 
 # origin, destination
 
 ### ALLUVIAL PLOT
 
-region_origin <- data %>%
-  group_by(origin) %>%
-  summarise(N = sum(N)) %>%
-  ungroup() %>%
-  mutate(origin_p = N / sum(N)) %>% 
-  select(-N)
-
-region_destination <- data %>%
-  group_by(destination) %>%
-  summarise(N = sum(N)) %>%
-  ungroup() %>%
-  mutate(destination_p = N / sum(N)) %>% 
-  select(-N)
-
-origin_destination_data <- data %>%
-  group_by(origin, destination) %>%
-  summarise(N = sum(N)) %>%
-  ungroup() %>%
-  left_join(region_origin,by = join_by(origin)) %>% 
-  left_join(region_destination,by = join_by(destination)) %>% 
-  mutate(
-    origin_lab = paste0(origin, ' (', percent(origin_p),')'),
-    destination_lab = paste0(destination, ' (', percent(destination_p),')'),
-    # origin = factor(origin, regions_order, label=origin_lab),
-    # destination = factor(destination, levels = regions_order, label=destination_lab)
-    )
+alluvial_plots <- function(data,axis_1='origin', axis_2='destination'){
   
-origin_labs <- 
-  origin_destination_data %>% arrange(-origin_p) %>% 
-  select(origin, origin_lab) %>% distinct() %>% pull(origin, origin_lab)
+  axis_1 <- sym(axis_1)
+  axis_2 <- sym(axis_2)
+  
+  axis_1_df <- data %>% 
+    group_by(!!axis_1) %>%
+    summarise(N = sum(N)) %>%
+    ungroup() %>%
+    mutate(p_1 = N / sum(N)) %>% 
+    select(-N) 
+  
+  axis_2_df <- data %>% 
+    group_by(!!axis_2) %>%
+    summarise(N = sum(N)) %>%
+    ungroup() %>%
+    mutate(p_2 = N / sum(N)) %>% 
+    select(-N)
+  
+  axis_1_2_df <- data %>%
+    group_by(!!axis_1, !!axis_2) %>%
+    summarise(N = sum(N)) %>%
+    ungroup() %>%
+    left_join(axis_1_df,by = join_by(!!axis_1)) %>% 
+    left_join(axis_2_df,by = join_by(!!axis_2)) %>% 
+    mutate(
+      ax1_lab = paste0(!!axis_1, ' (', percent(p_1,accuracy=0.01),')'),
+      ax2_lab = paste0(!!axis_2, ' (', percent(p_2,accuracy=0.01),')'),
+      ax1_lab = case_when(p_1<0.015 ~ 'Other',
+                          TRUE ~ax1_lab),
+      ax2_lab = case_when(p_2<0.015 ~ 'Other',
+                          TRUE ~ax2_lab))
+  
+  ax1_labs <- axis_1_2_df %>% arrange(-p_1) %>% 
+    select(!!axis_1, ax1_lab) %>% distinct() %>% pull(!!axis_1, ax1_lab)
+  
+  if (axis_1=='origin' & axis_2=='destination') {
+    ax2_labs <- axis_1_2_df %>% 
+      mutate(axis_2 = factor(!!axis_2, levels = ax1_labs)) %>% 
+      arrange(axis_2) %>% 
+      select(axis_2, ax2_lab) %>% distinct() %>% pull(axis_2, ax2_lab)
+  }else{
+    ax2_labs <- axis_1_2_df %>% arrange(-p_2) %>% 
+      select(!!axis_2, ax2_lab) %>% distinct() %>% pull(!!axis_2, ax2_lab)
+  }
+  axis_1_2_df <- axis_1_2_df %>% 
+    mutate(axis1 = factor(!!axis_1, levels =ax1_labs,labels=names(ax1_labs)),
+           axis2 = factor(!!axis_2, levels =ax2_labs,labels=names(ax2_labs))
+    )
+  label_pos <- axis_1_2_df$N %>% sum()*1.1
+  
+  if (axis_1 == 'for_division') {
+    ax1_label = 'field'
+    ax2_label = paste0(axis_2)
+  }else{
+  if (axis_2 == 'for_division') {
+    ax1_label = paste0(axis_1)
+    ax2_label = 'field'
+  }else{
+    ax1_label = paste0(axis_1)
+    ax2_label = paste0(axis_2)
+  }
+  }
+  axis_1_2_df %>%
+    ggplot(aes(axis1 = axis1, axis2 = axis2, y = N)) +
+    geom_alluvium(aes(fill = axis1)) +
+    geom_stratum(fill='gray80') +
+    geom_text(stat = "stratum",
+              aes(label = after_stat(stratum))) +
+    theme_void()+
+    geom_text(inherit.aes = FALSE,
+              data = data.frame(x = c(1, 2), y = c(label_pos, label_pos), 
+                                label = c(ax1_label,ax2_label)),
+              size=6,
+              aes(label = label, x = x, y = y))+
+    theme(legend.position = 'none')
+  
+}
 
-destination_labs <-
-  origin_destination_data %>% 
-  mutate(destination = factor(destination, levels = origin_labs)) %>% 
-  arrange(destination) %>% 
-  select(destination, destination_lab) %>% distinct() %>% pull(destination,destination_lab)
+all1 <- alluvial_plots(data,'origin','destination')
+all2 <- alluvial_plots(data,axis_1 = 'origin',axis_2 = 'for_division')
+all3 <- alluvial_plots(data,axis_1 = 'for_division',axis_2 = 'destination')
 
-origin_destination_data <- origin_destination_data %>% 
-  mutate(origin = factor(origin, levels =origin_labs,labels=names(origin_labs)),
-         destination = factor(destination, levels =destination_labs,labels=names(destination_labs))
-         )
+ggarrange(all1,ggarrange(all2,all3),ncol = 1)
 
-origin_destination_data %>%
-  ggplot(aes(axis1 = origin, axis2 = destination, y = N)) +
-  geom_alluvium(aes(fill = origin)) +
-  geom_stratum(fill='gray80') +
-  geom_text(stat = "stratum",
-            aes(label = after_stat(stratum))) +
-  theme_void()+
-  theme(legend.position = 'none')
-ggsave('results/figures/origin_destination.png', dpi = 300, width = 12, height = 7)
+ggsave('results/figures/alluvial.png', dpi = 300, width = 10, height = 12)
+
 
 # origin, discipline, rca
 
@@ -160,15 +193,15 @@ origin_RCA <- data %>%
   left_join(div_dist_global, by=join_by(for_division)) %>% 
   group_by(origin) %>% 
   mutate(#origin = str_replace_all(origin,' ','\n'),
-         p_div_region = N/sum(N),
-         rca = p_div_region/p_div_global)
+    p_div_region = N/sum(N),
+    rca = p_div_region/p_div_global)
 
-  # ggplot(aes(rca,for_division, fill=origin))+
-  # geom_vline(xintercept = 1)+
-  # geom_col(position = position_dodge())+
-  # facet_grid(.~origin, scales = 'free')+
-  # theme(legend.position = 'none')+
-  # labs(y= '', title = 'Origin')
+# ggplot(aes(rca,for_division, fill=origin))+
+# geom_vline(xintercept = 1)+
+# geom_col(position = position_dodge())+
+# facet_grid(.~origin, scales = 'free')+
+# theme(legend.position = 'none')+
+# labs(y= '', title = 'Origin')
 
 
 destination_RCA <- data %>% 
@@ -177,35 +210,47 @@ destination_RCA <- data %>%
   left_join(div_dist_global, by=join_by(for_division)) %>% 
   group_by(destination) %>% 
   mutate(#destination = str_replace_all(destination,' ','\n'),
-         p_div_region = N/sum(N),
-         rca = p_div_region/p_div_global) 
+    p_div_region = N/sum(N),
+    rca = p_div_region/p_div_global) 
 
-
-
-
-origin_RCA %>%
-  select(-N,-p_div_region,rca_origin = rca, region=origin) %>% 
+rca_data <- origin_RCA %>%
+  select(for_division,p_div_global,N_origin=N,-p_div_region,rca_origin = rca, region=origin) %>% 
   left_join(destination_RCA %>% 
-              select(-N,-p_div_region,
+              select(for_division,p_div_global,N_destination=N,-p_div_region,
                      rca_destination=rca,
                      region=destination),
-            by = join_by(for_division, region,p_div_global)) %>% 
+            by = join_by(for_division, region,p_div_global))
+
+for_div <- rca_data$for_division %>% unique()
+names(for_div) <- 1:22
+rca_data %>% 
+  filter(N_origin>1000,N_destination>1000) %>% 
+  mutate(for_division = factor(for_division,levels=for_div,labels = names(for_div))) %>% 
   ggplot(aes(rca_origin,rca_destination, size=p_div_global,color=region, label=for_division))+
   # geom_point()+
-  geom_text_repel(max.overlaps = 20)+
+  geom_text_repel(max.overlaps = 100)+
   geom_hline(yintercept = 1)+
+  geom_smooth(method = 'lm', se=FALSE)+
   geom_vline(xintercept = 1)+
-  theme(legend.position = 'bottom')
+  theme_minimal()+
+  theme(legend.position = 'bottom',
+        text = element_text(size=18))
 
-ggsave('results/figures/rca_field_origin_destination.png', width = 12, height = 10)
+#probar grafico barras
 
-  # ggplot(aes(rca,for_division, fill=destination))+
-  # geom_vline(xintercept = 1)+
-  # geom_col(position = position_dodge())+
-  # facet_grid(.~destination, scales = 'free')+
-  # theme(legend.position = 'none',
-  #       axis.text.y = element_blank())+
-  # labs(y= '', title = 'Destination')
+ggsave('results/figures/rca_field_origin_destination.png', width = 14, 
+       height = 10, bg = 'white')
+
+tibble(ref=names(for_div),field=for_div) %>% gt() %>% 
+  gtsave('results/figures/ref_table.docx')
+
+# ggplot(aes(rca,for_division, fill=destination))+
+# geom_vline(xintercept = 1)+
+# geom_col(position = position_dodge())+
+# facet_grid(.~destination, scales = 'free')+
+# theme(legend.position = 'none',
+#       axis.text.y = element_blank())+
+# labs(y= '', title = 'Destination')
 
 
 # ggarrange(origin_RCA,destination_RCA,widths = c(1.5,1))
@@ -213,10 +258,42 @@ ggsave('results/figures/rca_field_origin_destination.png', width = 12, height = 
 
 
 # origin, destination, discipline and ratio
-ggplot(ggdata, aes(for_division,ratio, color=origin, size=N))+
-  geom_point()+
-  facet_grid(.~destination)+
-  coord_flip()
+
+exports <- data %>% 
+  group_by(for_division,region=origin) %>% 
+  summarise(n_export = sum(N))
+
+imports <- data %>% 
+  group_by(for_division,region=destination) %>% 
+  summarise(n_import = sum(N)) 
+
+net_flow <- left_join(imports,exports,by = join_by(for_division, region)) %>% 
+  mutate(net_import_flow = n_import-n_export,
+         rel_net_flow = net_import_flow/n_import)
+
+rca_data %>% 
+  left_join(net_flow,by = join_by(for_division, region)) %>% 
+  filter(n_import>1000, n_export>1000) %>% 
+  mutate(origin_destination_rca_ratio = rca_origin/rca_destination) %>% 
+  ggplot(aes(origin_destination_rca_ratio,rel_net_flow,color =region,
+             label=for_division, size=p_div_global))+
+  # geom_point()+
+  geom_text_repel(max.overlaps = 500,min.segment.length = unit(0, 'lines'))+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 1)
+# facet_wrap(.~flow)
+
+# 
+# ggdata <- gdata %>%
+#   mutate(ratio = p_division_origin/p_origin) %>% 
+#   filter(N > 1000, ratio > 1) %>%
+#   arrange(-ratio)
+# 
+# 
+# ggplot(ggdata, aes(for_division,ratio, color=origin, size=N))+
+#   geom_point()+
+#   facet_grid(.~destination)+
+#   coord_flip()
 
 ggsave('results/figures/origin_destination_relative_ratio.png', width = 14, height = 7)
 

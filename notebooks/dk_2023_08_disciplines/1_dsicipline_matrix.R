@@ -166,5 +166,3 @@ for (country in selection_countries) {
 
 ggarrange(plotlist = figures)
 
-# regions
-
