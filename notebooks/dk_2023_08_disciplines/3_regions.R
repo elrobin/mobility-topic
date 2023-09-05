@@ -6,6 +6,7 @@ library(ggrepel)
 library(scales)
 library(ggpubr)
 library(ggalluvial)
+library(gt)
 
 df <- read_excel('data/discipline_country_migrations.xlsx',sheet = 'Data')
 
@@ -273,7 +274,7 @@ net_flow <- left_join(imports,exports,by = join_by(for_division, region)) %>%
 
 rca_data %>% 
   left_join(net_flow,by = join_by(for_division, region)) %>% 
-  filter(n_import>1000, n_export>1000) %>% 
+  filter(n_import>1000, n_export>1000) %>%
   mutate(origin_destination_rca_ratio = rca_origin/rca_destination) %>% 
   ggplot(aes(origin_destination_rca_ratio,rel_net_flow,color =region,
              label=for_division, size=p_div_global))+
@@ -282,6 +283,20 @@ rca_data %>%
   geom_hline(yintercept = 0)+
   geom_vline(xintercept = 1)
 # facet_wrap(.~flow)
+
+rca_data %>% 
+  left_join(net_flow,by = join_by(for_division, region)) %>% 
+  # filter(n_import>1000, n_export>1000) %>% 
+  mutate(origin_destination_rca_ratio = rca_origin/rca_destination) %>% 
+  ggplot(aes(origin_destination_rca_ratio,rel_net_flow,color =region,
+             label=for_division, size=n_import))+
+  geom_smooth()+
+  geom_point()+
+  # geom_text_repel(max.overlaps = 500,min.segment.length = unit(0, 'lines'))+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 1)
+# facet_wrap(.~flow)
+
 
 # 
 # ggdata <- gdata %>%
