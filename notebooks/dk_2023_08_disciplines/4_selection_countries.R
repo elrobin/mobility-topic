@@ -78,6 +78,7 @@ plt1 <- df_selection %>%
   geom_tile() +
   facet_wrap(destination~., scales = 'free',nrow = 1)+
   tidytext::scale_y_reordered() +
+  labs(x='')+
   theme(legend.position = 'bottom')
 
 plt2 <- df_selection %>% 
@@ -85,12 +86,14 @@ plt2 <- df_selection %>%
   geom_tile() +
   tidytext::scale_y_reordered() +
   facet_wrap(destination~., scales = 'free',nrow = 1)+
+  labs(x='')+
   theme(legend.position = 'bottom')
 
 
 ggarrange(plt1,plt2, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
 
 ggsave('results/figures/selection_countries.png', width = 16,height = 6)
+
 
 ## alternative: origin and destination selection
 
@@ -103,7 +106,6 @@ origin_dest_selection <- df %>%
   filter(origin %in% selection_countries, destination %in% selection_countries) %>% 
   group_by(origin,destination) %>% 
   summarise(total_origin_dest = sum(N))
-
 
 df_selection <- df %>%
   complete(origin,destination,for_division) %>% 
@@ -130,6 +132,7 @@ plt1 <- df_selection %>%
   ggplot(aes(for_division,origin, fill=fields, alpha=p_div)) + 
   geom_tile() +
   facet_wrap(destination~., scales = 'free',nrow = 1)+
+  labs(x= 'destination')+
   tidytext::scale_y_reordered() +
   theme(legend.position = 'bottom')
 
@@ -138,12 +141,60 @@ plt2 <- df_selection %>%
   geom_tile() +
   tidytext::scale_y_reordered() +
   facet_wrap(destination~., scales = 'free',nrow = 1)+
+  labs(x= 'destination')+
   theme(legend.position = 'bottom')
 
 
 ggarrange(plt1,plt2, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
 
 ggsave('results/figures/selection_countries2.png', width = 18,height = 5, dpi = 300)
+
+#Wrap by country of origin
+
+df_selection <- df %>%
+  complete(origin,destination,for_division) %>% 
+  group_by(origin,destination) %>% 
+  mutate(N = coalesce(N,0)) %>% 
+  inner_join(origin_dest_selection,by = join_by(origin, destination))
+
+fields <- df_selection$for_division %>% unique()
+names(fields) <- paste0(LETTERS[1:22],':',fields)
+
+df_selection <- df_selection %>%
+  group_by(for_division,destination) %>% 
+  mutate(N_division = sum(N)) %>%
+  group_by(origin,destination) %>% 
+  mutate(N_origin = sum(N)) %>% 
+  ungroup() %>% 
+  mutate(p_origin = N/N_origin,
+         p_div = N/N_division,
+         fields = factor(for_division,levels=fields,label=names(fields)),
+         for_division = factor(for_division, label=LETTERS[1:22]),
+         destination = tidytext::reorder_within(destination, N_origin, within = origin)) 
+
+
+plt1b <- df_selection %>%
+  ggplot(aes(for_division,destination, fill=fields, alpha=p_div)) + 
+  geom_tile() +
+  facet_wrap(origin~., scales = 'free',nrow = 1)+
+  tidytext::scale_y_reordered() +
+  labs(x= 'origin')+
+  theme(legend.position = 'bottom')
+
+plt2b <- df_selection %>% 
+  ggplot(aes(for_division,destination, fill=fields, alpha=p_origin)) + 
+  geom_tile() +
+  tidytext::scale_y_reordered() +
+  facet_wrap(origin~., scales = 'free',nrow = 1)+
+  labs(x = 'origin') +
+  theme(legend.position = 'bottom') 
+  
+
+# ggarrange(plt1,plt2, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
+ggarrange(plt1,plt1b,plt2,plt2b, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
+
+ggsave('results/figures/selection_countries3.png', width = 18,height = 10, dpi = 300)
+
 
 
   
