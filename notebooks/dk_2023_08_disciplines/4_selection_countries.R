@@ -134,7 +134,8 @@ plt1 <- df_selection %>%
   facet_wrap(destination~., scales = 'free',nrow = 1)+
   labs(x= 'destination')+
   tidytext::scale_y_reordered() +
-  theme(legend.position = 'bottom')
+  theme(legend.position = 'bottom',
+        plot.background = element_rect(color = "black"))
 
 plt2 <- df_selection %>% 
   ggplot(aes(for_division,origin, fill=fields, alpha=p_origin)) + 
@@ -142,7 +143,8 @@ plt2 <- df_selection %>%
   tidytext::scale_y_reordered() +
   facet_wrap(destination~., scales = 'free',nrow = 1)+
   labs(x= 'destination')+
-  theme(legend.position = 'bottom')
+  theme(legend.position = 'bottom',
+        plot.background = element_rect(color = "black"))
 
 
 ggarrange(plt1,plt2, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
@@ -179,7 +181,8 @@ plt1b <- df_selection %>%
   facet_wrap(origin~., scales = 'free',nrow = 1)+
   tidytext::scale_y_reordered() +
   labs(x= 'origin')+
-  theme(legend.position = 'bottom')
+  theme(legend.position = 'bottom',
+        plot.background = element_rect(color = "black"))
 
 plt2b <- df_selection %>% 
   ggplot(aes(for_division,destination, fill=fields, alpha=p_origin)) + 
@@ -187,11 +190,13 @@ plt2b <- df_selection %>%
   tidytext::scale_y_reordered() +
   facet_wrap(origin~., scales = 'free',nrow = 1)+
   labs(x = 'origin') +
-  theme(legend.position = 'bottom') 
+  theme(legend.position = 'bottom',
+        plot.background = element_rect(color = "black")) 
   
 
 # ggarrange(plt1,plt2, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
 ggarrange(plt1,plt1b,plt2,plt2b, common.legend = TRUE, ncol = 1, labels = 'AUTO',legend = 'bottom')
+
 
 ggsave('results/figures/selection_countries3.png', width = 18,height = 10, dpi = 300)
 
