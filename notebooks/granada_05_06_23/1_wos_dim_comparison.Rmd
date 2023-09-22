@@ -1,0 +1,81 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r setup}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(tidyverse)
+library(countrycode)
+library(readxl)
+library(plotly)
+```
+
+
+```{r}
+df_wos <- read_excel('../../data/country_portfolios_WOS.xlsx')
+df_dim <- read_delim('../../data/country_portfolios_dimensions.csv',delim = ';')
+countries_cross <- read_csv('../../data/country_codes.csv')
+```
+
+```{r}
+df_dim <- df_dim %>% 
+    rename(N=p, Type=type) %>% 
+  filter(Type !='all') %>% 
+  mutate(Type = case_match(Type,
+                           'national' ~ 'National',
+                           'international' ~ 'International',
+                           'migrant' ~ 'Mobile'))
+```
+
+```{r}
+
+df_dim_agg <- df_dim %>% 
+  group_by(Type,country_code) %>% 
+  summarise(N_dim = sum(N)) %>% 
+  group_by(country_code) %>% 
+  mutate(p_dim = N_dim/sum(N_dim)) %>% 
+  left_join(countries_cross,by = join_by(country_code==iso2c))
+  
+df_wos_agg <- df_wos %>% 
+  group_by(Type,eregroupement) %>% 
+  summarise(N_wos = sum(N)) %>% 
+  group_by(eregroupement) %>% 
+  mutate(p_wos = N_wos/sum(N_wos)) 
+
+df <- df_dim_agg %>% 
+  left_join(df_wos_agg)
+
+```
+
+```{r}
+df <- df %>% 
+  filter(!eregroupement%in% c('ZZALL','Unknown')) %>% 
+  group_by(country_code) %>% 
+  mutate(tot_N_dim = sum(N_dim),
+         tot_N_wos = sum(N_wos))
+```
+
+
+```{r}
+# ggplotly(
+df %>%
+  filter(tot_N_dim>1000) %>% 
+  ggplot(aes(p_dim,p_wos, color=eregroupement, group=Type, size=tot_N_dim))+
+  geom_abline(slope = 1)+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  scale_x_continuous(labels = scales::percent)+
+  scale_y_continuous(labels = scales::percent)+
+  lims(x=c(0,0.85), y= c(0,0.85))+
+  facet_wrap(Type~., scales = 'free')+
+  labs(x = 'proportion by country in Dimensions',y = 'proportion by country in WOS')+
+  theme_minimal()+
+  theme(legend.position = 'none',
+        text = element_text(size=18))
+ggsave('../../results/dim_wos.png', width = 14, height = 6)
+# )
+```
+
+

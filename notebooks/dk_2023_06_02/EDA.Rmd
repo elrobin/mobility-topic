@@ -58,6 +58,15 @@ df %>%
   group_by(first_year) %>% 
   summarise(n_papers=mean(n_papers))
 ```
+```{r}
+df %>% 
+  group_by(Researcher_id) %>% 
+  summarise(active_years = unique(active_years),
+            n_papers = length(unique(pub_id))) %>% 
+  group_by(active_years) %>% 
+  summarise(n_author=length(unique(Researcher_id)))
+```
+
 
 ```{r}
 df %>% 
@@ -234,3 +243,7 @@ df_authors %>%
 ```
 
 Mobile researchers are more focused on their topics
+
+
+
+
