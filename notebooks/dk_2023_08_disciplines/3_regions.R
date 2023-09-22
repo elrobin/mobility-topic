@@ -231,7 +231,8 @@ rca_data %>%
   # geom_point()+
   geom_text_repel(max.overlaps = 100)+
   geom_hline(yintercept = 1)+
-  geom_smooth(method = 'lm', se=FALSE)+
+  # geom_smooth(method = 'lm', se=FALSE)+
+  geom_smooth(method = 'lm', se=FALSE, aes(weight=p_div_global))+
   geom_vline(xintercept = 1)+
   theme_minimal()+
   theme(legend.position = 'bottom',
