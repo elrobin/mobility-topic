@@ -82,6 +82,12 @@ gdata_p2 <- df %>%
   mutate(destination =  fct_lump_n(destination,n=10),
          origin = case_when(destination=='Other'~NA_character_, # I will remove them so they are greyed on the map
                             TRUE ~origin))
+
+gdata_p2 %>% 
+  mutate(continent_origin = countrycode(origin,origin='country.name',
+                                        destination = 'continent'),
+         continent_destination = countrycode(destination,origin='country.name',
+                                        destination = 'continent')) %>% View()
 ## mapping
 
 country_map <- world %>% 
