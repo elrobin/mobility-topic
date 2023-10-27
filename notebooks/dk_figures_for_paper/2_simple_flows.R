@@ -68,6 +68,32 @@ plt_1 <-origin_destination_flow %>%
   scale_fill_viridis_c(labels=scales::percent)+
   theme(legend.position = 'bottom')
 
+#vertical normalization
+plt_1b <- origin_destination_flow %>% 
+  group_by(origin_region) %>% 
+  mutate(prop_flow = prop_flow/sum(prop_flow)) %>% 
+  ggplot(aes(origin_region,destination_region,
+             fill=prop_flow,label = scales::percent(prop_flow,accuracy=0.1))) + 
+  geom_tile() +
+  geom_text()+
+  labs(x='Origin', y='Destination', fill='proportion of mobility')+
+  scale_x_discrete()+
+  scale_fill_viridis_c(labels=scales::percent)+
+  theme(legend.position = 'bottom')
+
+#horizontal normalization
+plt_1c <- origin_destination_flow %>% 
+  group_by(destination_region) %>% 
+  mutate(prop_flow = prop_flow/sum(prop_flow)) %>% 
+  ggplot(aes(origin_region,destination_region,
+             fill=prop_flow,label = scales::percent(prop_flow,accuracy=0.1))) + 
+  geom_tile() +
+  geom_text()+
+  labs(x='Origin', y='Destination', fill='proportion of mobility')+
+  scale_x_discrete()+
+  scale_fill_viridis_c(labels=scales::percent)+
+  theme(legend.position = 'bottom')
+
 
 origin_field_flow <- df %>% 
   group_by(origin_region,for_division) %>% 
@@ -109,6 +135,10 @@ plt_2 <- bind_rows(origin_field_flow,destination_field_flow) %>%
 
 plt_1
 ggsave('results/figures/2_region_region_matrix.png', dpi = 300, width = 7, height = 4)
+
+ggarrange(plt_1b,plt_1c,labels = 'AUTO')
+ggsave('results/figures/2b_region_region_matrix.png', dpi = 300, width = 16, height = 6)
+
 plt_2
 ggsave('results/figures/3_region_field_matrices.png', dpi = 300, width =10, height = 10)
 

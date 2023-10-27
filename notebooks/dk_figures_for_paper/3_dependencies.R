@@ -85,7 +85,7 @@ countries_as_destinations <- function(df,countries_flows,selection_countries){
     group_by(destination) %>% #for each country of destinations
     # top_n(n=5,wt = p_destination) %>% View()#I keep the countries for which 
     top_n(n=5,wt = p_origin) %>%  #I keep the countries for which
-    mutate(origin = tidytext::reorder_within(origin, -p_origin, within = destination),
+    mutate(origin = tidytext::reorder_within(origin, p_origin, within = destination),
            destination = str_replace(destination,' ','\n'))
   
   selection_df %>% 
@@ -105,7 +105,7 @@ countries_as_origins <- function(df,countries_flows,selection_countries){
     group_by(origin) %>% #for each country of destinations
     # top_n(n=5,wt = p_destination) %>% View()#I keep the countries for which 
     top_n(n=5,wt = p_destination) %>%  #I keep the countries for which
-    mutate(destination = tidytext::reorder_within(destination, -p_destination, within = origin),
+    mutate(destination = tidytext::reorder_within(destination, p_destination, within = origin),
            origin = str_replace(origin,' ','\n'))
   
   selection_df %>% 

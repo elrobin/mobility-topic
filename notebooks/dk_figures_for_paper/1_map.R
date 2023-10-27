@@ -18,8 +18,8 @@ df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
                            'national' ~ 'National',
                            'international' ~ 'National',
                            # 'international' ~ 'International',
-                           'migrant' ~ 'Immigrant',
-                           'abroad' ~ 'Emigrant'),
+                           'migrant' ~ 'Imports',
+                           'abroad' ~ 'Exports'),
          country_code = countrycode(country_code, origin = 'iso2c', destination = 'country.name'),
          continent = countrycode(country_code, origin = 'country.name', destination = 'continent')
   )  %>% 
@@ -60,8 +60,8 @@ gdata_p <-  df_dim %>%
 map_prop_1 <-
   world %>% 
   left_join(gdata_p,by = join_by(country_code)) %>% 
-  pivot_longer(cols = Emigrant:National, names_to = 'groups', values_to = 'p') %>%
-  mutate(groups = factor(groups, levels =c('National','Immigrant', 'Emigrant'))) %>% 
+  pivot_longer(cols = Exports:National, names_to = 'groups', values_to = 'p') %>%
+  mutate(groups = factor(groups, levels =c('National','Imports', 'Exports'))) %>% 
   filter(region!='Antarctica') %>% 
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
@@ -77,7 +77,7 @@ map_prop_1 <-
 
 gdata_p3 <-  df_dim %>%
   filter_countries(tr = 5000) %>% 
-  filter(type%in%c('Emigrant','Immigrant')) %>%
+  filter(type%in%c('Exports','Imports')) %>%
   group_by(country_code,type) %>%
   summarise(N = sum(N)) %>%
   group_by(country_code) %>%
@@ -88,7 +88,7 @@ gdata_p3 <-  df_dim %>%
   pivot_wider(names_from = type, values_from = p,values_fill = 0) %>%
   ungroup() %>% 
   mutate(country_code = countryname(country_code,destination = 'country.name.en'),
-         ratio = Emigrant/Immigrant)
+         ratio = Exports/Imports)
 #National = percent_rank(National)*100,
 # Emigrant = percent_rank(Emigrant)*100,
 # Immigrant = percent_rank(Immigrant)*100)
@@ -103,7 +103,7 @@ map_prop_2 <-
   scale_fill_viridis_c(values = rescale(c(0,.75,1.25,2,round(max(gdata_p3$ratio),digits = 2))),
                        breaks = c(0,.75,1.25,2,round(max(gdata_p3$ratio),digits = 2)-.01))+
   plain_theme+
-  labs(fill='Emigrants\nImmigrants\nratio')+
+  labs(fill='Exports\nImports\nratio')+
   theme(legend.position = 'right',
         text = element_text(size = 16),
         legend.key.height = unit(1.2, "cm"),
