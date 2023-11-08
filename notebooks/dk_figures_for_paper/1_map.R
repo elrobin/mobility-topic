@@ -8,12 +8,13 @@ library(scales)
 # library(gtExtras)
 source("notebooks/dk_figures/utils.R")
 
+countries <- read_csv('data/countries_list.txt')$country_code
 
 df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
   # df_dim <- read_delim('data/country_portfolios_dimensions.csv',delim = ';') %>%
   rename(N=p, 
          field = for_group_id) %>% 
-  filter(type !='all') %>% #!country_code %in% c('ZZALL','Unknown')
+  filter(type !='all', country_code %in% countries) %>% #!country_code %in% c('ZZALL','Unknown')
   mutate(type = case_match(type,
                            'national' ~ 'National',
                            'international' ~ 'National',

@@ -9,10 +9,13 @@ library(ggpubr)
 library(ggh4x)
 
 df <- read_excel('data/discipline_country_migrations.xlsx',sheet = 'Data')
+countries <- read_csv('data/countries_list.txt')$country_code
 
 # I aggregate to the division level
 df <- df %>% 
   group_by(for_division,country_code_origin,country_code) %>% 
+  filter(country_code_origin %in% countries,
+         country_code %in% countries) %>% 
   summarise(N = sum(N)) %>%
   ungroup() %>% 
   mutate(origin = countrycode(country_code_origin, 

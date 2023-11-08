@@ -34,17 +34,6 @@ df <- df %>%
 
 df %>% group_by(origin) %>% summarise(N = sum(N)) %>% summary()
 
-# min_countries_selection <- df %>% 
-#   # group_by(destination) %>%
-#   group_by(origin) %>%
-#   summarise(N = sum(N)) %>% 
-#   arrange(-N) %>% 
-#   filter(N>3000) %>% pull(origin)
-# 
-# df <- df %>% 
-#   filter(origin %in% min_countries_selection, 
-#          destination %in% min_countries_selection)
-
 selection_countries <- df %>% 
   group_by(destination_region,destination) %>% 
   summarise(N=sum(N)) %>% 
@@ -55,6 +44,12 @@ selection_countries <- df %>%
   filter(!is.na(destination_region)) %>% 
   pull(destination)
 
+regions_order <- df %>%
+  group_by(origin_region) %>% 
+  summarise(N = sum(N)) %>% 
+  arrange(-N) %>%
+  filter(!is.na(origin_region)) %>% 
+  pull(origin_region)
 # selection_countries <- c('United States','United Kingdom','China','Saudi Arabia','India','Brazil','South Africa')
 
 countries_flows <- df %>% 
@@ -67,7 +62,6 @@ countries_flows <- df %>%
   mutate(p_destination = n_origin_destination/n_destination,
          p_origin =  n_origin_destination/n_origin) %>% 
   ungroup()
-
 
 
 # relative importance of countries as origins and destinations ------------
@@ -85,37 +79,31 @@ strip <- strip_themed(background_y = elem_list_rect(fill =
                                                         "#A58AFF",
                                                         "#53B400",
                                                         "#FB61D7"
-                                                        ))) #I manually sort the colors to match regions
-
-regions_order <- df %>%
-  group_by(origin_region) %>% 
-  summarise(N = sum(N)) %>% 
-  arrange(-N) %>%
-  filter(!is.na(origin_region)) %>% 
-  pull(origin_region)
-
+                                                      )))#I manually sort the colors to match regions
 regions_colors <- c("#C49A00","#00B6EB","#F8766D","#A58AFF","#53B400","#00C094",
                     "#FB61D7")
 
 names(regions_colors) <- regions_order
 
+
 countries_as_destinations <- function(df,countries_flows,selection_countries){
   
   selection_df <- countries_flows %>% 
     filter(destination%in% selection_countries) %>% #I keep the selection of destinations
-    group_by(destination) %>% #for each country of destinations
-    top_n(n=10,wt = p_origin) %>%  #I keep the countries for which
-    mutate(origin = tidytext::reorder_within(origin, p_origin, within = destination),
+    group_by(destination,origin_region) %>% #for each country of destinations
+    summarise(p_origin = weighted.mean(p_origin,n_origin)) %>% 
+    # top_n(n=10,wt = p_origin) %>%  #I keep the countries for which
+    mutate(origin_region = factor(origin_region,levels=regions_order),
            destination = factor(destination, levels=selection_countries),
            destination = fct_relabel(destination,~str_replace(.x,' ','\n')),
-           ) 
+    ) 
   
   selection_df %>% 
-    ggplot(aes(origin,p_origin, fill=origin_region))+
+    ggplot(aes(origin_region,p_origin, fill=origin_region))+
     geom_col()+
-    scale_y_continuous(labels = percent)+
+    scale_y_continuous(labels = percent,limits = c(0,0.45))+
     coord_flip()+
-    labs(x='most dependent exporters',
+    labs(x='regions as exporters',
          y='proportion of papers exported to the focal country',  fill='region')+
     tidytext::scale_x_reordered() +
     scale_fill_manual(values = regions_colors)+
@@ -126,32 +114,30 @@ countries_as_origins <- function(df,countries_flows,selection_countries){
   
   selection_df <- countries_flows %>% 
     filter(origin %in% selection_countries) %>% #I keep the selection of destinations
-    group_by(origin) %>% #for each country of destinations
-    # top_n(n=5,wt = p_destination) %>% View()#I keep the countries for which 
-    top_n(n=10,wt = p_destination) %>%  #I keep the countries for which
-    mutate(destination = tidytext::reorder_within(destination, p_destination, within = origin),
-           # origin = str_replace(origin,' ','\n'),
+    group_by(origin,destination_region) %>% #for each country of destinations
+    summarise(p_destination = weighted.mean(p_destination,n_destination)) %>% 
+    mutate(destination_region = factor(destination_region,levels=regions_order),
            origin = factor(origin, levels=selection_countries),
            origin = fct_relabel(origin,~str_replace(.x,' ','\n')))
   
   selection_df %>% 
-    ggplot(aes(destination,p_destination, fill=destination_region))+
+    ggplot(aes(destination_region,p_destination, fill=destination_region))+
     geom_col()+
-    scale_y_continuous(labels = percent)+
+    scale_y_continuous(labels = percent,limits = c(0,0.45))+
     coord_flip()+
-    labs(x='most dependent importers',
+    labs(x='regions as importers',
          y= 'proportion of the imported papers from the focal country', fill='region')+
-    tidytext::scale_x_reordered() +
     scale_fill_manual(values = regions_colors)+
+    tidytext::scale_x_reordered() +
     facet_grid2(origin~., scales = 'free',strip = strip)
 }
 
 plt_1a <- countries_as_destinations(df,countries_flows,selection_countries)
-plt_1b <- countries_as_origins(df,countries_flows,selection_countries)
+plt_1b <- countries_as_origins(df,countries_flows,selection_countries) + 
+  theme(axis.text.y = element_blank())
 
-ggarrange(plt_1a, plt_1b, common.legend = TRUE, legend = 'bottom',labels = 'AUTO')
+ggarrange(plt_1a, plt_1b,legend = 'none',widths = c(1.3,1))
 
-ggsave('results/figures/4_origin_destination_dependencies.png', width = 10, height = 10)
-
+ggsave('results/figures/4_origin_destination_dependencies_agg.png', width = 12, height = 7)
 
 

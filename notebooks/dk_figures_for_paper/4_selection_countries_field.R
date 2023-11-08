@@ -8,10 +8,13 @@ library(ggpubr)
 library(ggh4x)
 
 df <- read_excel('data/discipline_country_migrations.xlsx',sheet = 'Data')
+countries <- read_csv('data/countries_list.txt')$country_code
 
 # I aggregate to the division level
 df <- df %>% 
   group_by(for_division,country_code_origin,country_code) %>% 
+  filter(country_code_origin %in% countries,
+         country_code %in% countries) %>% 
   summarise(N = sum(N)) %>%
   ungroup() %>% 
   mutate(origin = countrycode(country_code_origin, 
@@ -95,6 +98,7 @@ countries_as_destinations_field <- function(df,countries_flows,selection_countri
     facet_wrap(destination~., scales = 'free',nrow = 2)+
     tidytext::scale_y_reordered() +
     labs(x='')+
+    theme_minimal()+
     theme(legend.position = 'bottom')
 }
 
@@ -117,9 +121,11 @@ countries_as_origin_field <- function(df,countries_flows,selection_countries){
            destination = tidytext::reorder_within(destination, p_origin_field, within = origin)) %>% 
     ggplot(aes(for_division,destination, fill=fields,alpha=p_destination_field))+
     geom_tile() +
+    scale_alpha_binned(labels=percent)+
     facet_wrap(origin~., scales = 'free',nrow = 2)+
     tidytext::scale_y_reordered() +
     labs(x='')+
+    theme_minimal()+
     theme(legend.position = 'bottom')
 }
 
@@ -152,8 +158,10 @@ countries_as_destinations_field_2 <- function(df,countries_flows,selection_count
     ggplot(aes(for_division,origin, fill=fields,alpha=p_field_destination))+
     geom_tile() +
     facet_wrap(destination~., scales = 'free',nrow = 2)+
+    scale_alpha_binned(labels=percent)+
     tidytext::scale_y_reordered() +
     labs(x='')+
+    theme_minimal()+
     theme(legend.position = 'bottom')
 }
 
@@ -177,8 +185,10 @@ countries_as_origin_field_2 <- function(df,countries_flows,selection_countries){
     ggplot(aes(for_division,destination, fill=fields,alpha=p_field_destination))+
     geom_tile() +
     facet_wrap(origin~., scales = 'free',nrow = 2)+
+    scale_alpha_binned(labels=percent)+
     tidytext::scale_y_reordered() +
     labs(x='')+
+    theme_minimal()+
     theme(legend.position = 'bottom')
 }
 
