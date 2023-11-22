@@ -33,10 +33,10 @@ df <- df %>%
   filter(!is.na(origin),!is.na(destination)) %>% 
   select(-c(country_code_origin,country_code))
 
-min_countries_selection <- df %>% group_by(origin) %>% 
-  summarise(N = sum(N)) %>% 
-  arrange(-N) %>% 
-  filter(N>1000) %>% pull(origin)
+# min_countries_selection <- df %>% group_by(origin) %>% 
+#   summarise(N = sum(N)) %>% 
+#   arrange(-N) %>% 
+#   filter(N>1000) %>% pull(origin)
 
 # df <- df %>% 
 #   filter(origin %in% min_countries_selection, 
@@ -72,19 +72,57 @@ gdata_p1 <- df %>%
   filter(N == max(N)) %>% 
   arrange(N)
 
-## countyr level
-gdata_p2 <- df %>% 
+## country level
+gdata_p2 <-
+  df %>% 
   # group_by(origin,origin_region,destination,destination_region) %>% 
-  group_by(origin,destination) %>% 
+  group_by(origin,destination,destination_region) %>% 
   # filter(origin %in% min_countries_selection,
   #        destination %in% min_countries_selection) %>% 
   summarise(N = sum(N)) %>% 
   group_by(origin) %>% 
   filter(N == max(N)) %>% 
-  ungroup() %>% 
-  mutate(destination =  fct_lump_n(destination,n=10),
-         origin = case_when(destination=='Other'~NA_character_, # I will remove them so they are greyed on the map
+    ungroup() %>% 
+    mutate(destination =  fct_lump_n(destination,n=9),
+           origin = case_when(destination=='Other'~NA_character_, # I will remove them so they are greyed on the map
                             TRUE ~origin))
+
+gdata_p2 %>% 
+  mutate(continent_origin = countrycode(origin,origin='country.name',
+                                        destination = 'continent'),
+         continent_destination = countrycode(destination,origin='country.name',
+                                             destination = 'continent'))
+## mapping
+gdata_p2 %>%
+  mutate(destination_region = case_when(destination=='Other'~'Other',
+                                        TRUE ~destination_region)) %>% 
+  select(destination,destination_region) %>% unique() %>% 
+  arrange(destination_region)
+
+
+country_colors <- gdata_p2 %>%
+  mutate(destination_region = case_when(destination=='Other'~'Other',
+                                        TRUE ~destination_region)) %>% 
+  select(destination,destination_region) %>% unique() %>% 
+  arrange(destination_region) %>% 
+  # left_join(tibble(regions_colors, destination_region=names(regions_colors))) %>% 
+  mutate(country_color = case_match(destination,.default = 'black',
+                                    "China" ~ alpha( "#FFD92F",1),
+                                    "Australia" ~ alpha( "#FFD92F",0.5),
+                                    "France" ~ alpha( "#E78AC3",1),
+                                    "Germany" ~ alpha( "#E78AC3",0.75),
+                                    "United Kingdom" ~ alpha( "#E78AC3",0.5),
+                                    "Spain" ~ alpha( "#E78AC3",0.25),
+                                    "Brazil" ~ alpha( "#66C2A5",1),
+                                    "United States" ~ alpha( "#8DA0CB",1),
+                                    "Other" ~ alpha( "black",0.5),
+                                    "South Africa" ~ alpha( "#FC8D62",1),
+  )) %>%  pull(country_color,destination)
+
+regions <- df$destination_region %>% unique()
+# regions_colors <- RColorBrewer::brewer.pal(7, 'Set2')
+regions_colors <- c('#FFD92F',"#8DA0CB","#E78AC3","#A6D854","#FC8D62",'#E5C494', "#66C2A5")
+names(regions_colors) <- regions
 ## mapping
 
 country_map <- world %>% 
@@ -92,9 +130,10 @@ country_map <- world %>%
   filter(region!='Antarctica') %>% 
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
-  geom_polygon(aes(fill = destination)) +
+  geom_polygon(aes(fill=destination)) +
   plain_theme+
   labs(fill='Main\ndestination\ncountry')+
+  scale_fill_manual(values = country_colors)+
   theme(legend.position = 'bottom',
     # legend.key.width = unit(1.5, "cm"),
     # text = element_text(size = 18),
@@ -103,13 +142,14 @@ country_map <- world %>%
     )
 
 regional_map <- world %>% 
-  left_join(gdata_p1,by = join_by(country==origin)) %>% 
-  filter(region!='Antarctica', !is.na(destination_region)) %>% 
+  left_join(gdata_p1,by = join_by(country==origin)) %>%
+  filter(region!='Antarctica') %>% 
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
   geom_polygon(aes(fill = destination_region)) +
   plain_theme+
   labs(fill='Main\ndestination\nregion')+
+  scale_fill_manual(values = regions_colors)+
   theme(# legend.position = 'none',
     # legend.key.width = unit(1.5, "cm"),
     # text = element_text(size = 18),
@@ -151,6 +191,7 @@ country_map <- world %>%
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
   geom_polygon(aes(fill = origin)) +
+  scale_fill_manual(values = country_colors)+
   plain_theme+
   labs(fill='Main\norigin\ncountry')+
   theme(legend.position = 'bottom',
@@ -162,10 +203,11 @@ country_map <- world %>%
 
 regional_map <- world %>% 
   left_join(gdata_p1,by = join_by(country==destination)) %>% 
-  filter(region!='Antarctica', !is.na(origin_region)) %>% 
+  filter(region!='Antarctica') %>% 
   ggplot(aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
   geom_polygon(aes(fill = origin_region)) +
+  scale_fill_manual(values = regions_colors)+
   plain_theme+
   labs(fill='Main\norigin\nregion')+
   theme(# legend.position = 'none',
