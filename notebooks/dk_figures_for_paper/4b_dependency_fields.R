@@ -150,6 +150,6 @@ plt_1b <- countries_as_origins(df,countries_flows,selection_countries) +
 
 ggarrange(plt_1a, plt_1b,common.legend = TRUE,legend = 'bottom',widths = c(1.3,1))
 
-ggsave('results/figures/9_origin_destination_field_agg.png', width = 12, height = 7)
+ggsave('results/figures/9_origin_destination_field_agg.png', width = 14, height = 10)
 
 
